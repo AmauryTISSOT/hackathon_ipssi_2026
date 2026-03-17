@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import authRoutes from './authRoutes.js';
 import quotationRoutes from './quotationRoutes.js';
 import invoiceRoutes from './invoiceRoutes.js';
 import companyRoutes from './companyRoutes.js';
@@ -8,6 +9,7 @@ import certificateEmergencyUrssafRoutes from './certificateEmergencyUrssafRoutes
 
 const router = Router();
 
+router.use('/auth', authRoutes);
 router.use('/quotations', quotationRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/companies', companyRoutes);
