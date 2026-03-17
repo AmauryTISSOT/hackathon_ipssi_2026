@@ -1,5 +1,5 @@
 x-airflow-common: &airflow-common
-  build: ./airflow
+  build: ./backend/datalake/airflow
   environment: &airflow-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
@@ -19,9 +19,9 @@ x-airflow-common: &airflow-common
     MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
     MONGO_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/hackathon?authSource=admin
   volumes:
-    - ./airflow/dags:/opt/airflow/dags
-    - ./airflow/logs:/opt/airflow/logs
-    - ./airflow/plugins:/opt/airflow/plugins
+    - ./backend/datalake/airflow/dags:/opt/airflow/dags
+    - ./backend/datalake/airflow/logs:/opt/airflow/logs
+    - ./backend/datalake/airflow/plugins:/opt/airflow/plugins
   networks:
     - hackathon-net
   depends_on:
@@ -88,7 +88,7 @@ services:
       - hackathon-net
 
   minio-init:
-    build: ./scripts
+    build: ./backend/datalake/scripts
     container_name: minio-init
     restart: "no"
     environment:
