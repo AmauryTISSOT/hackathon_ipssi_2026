@@ -1,6 +1,9 @@
+import os
+
+from pymongo import MongoClient
+
+
 def save_to_mongodb(**context):
-    import os
-    from pymongo import MongoClient
 
     gold_data = context["ti"].xcom_pull(task_ids="validate_and_store_gold")
     doc_name = context["ti"].xcom_pull(task_ids="store_bronze")

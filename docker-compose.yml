@@ -18,6 +18,8 @@ x-airflow-common: &airflow-common
     MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
     MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
     MONGO_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/hackathon?authSource=admin
+    AZURE_DI_ENDPOINT: ${AZURE_DI_ENDPOINT}
+    AZURE_DI_KEY: ${AZURE_DI_KEY}
   volumes:
     - ./backend/datalake/airflow/dags:/opt/airflow/dags
     - ./backend/datalake/airflow/logs:/opt/airflow/logs
@@ -67,7 +69,7 @@ services:
       - hackathon-net
 
   minio:
-    image: minio/minio:${MINIO_VERSION:-latest}
+    image: minio/minio:latest
     container_name: minio
     hostname: minio
     restart: unless-stopped
@@ -169,13 +171,6 @@ services:
     container_name: airflow-scheduler
     command: scheduler
     restart: unless-stopped
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     depends_on:
       airflow-init:
         condition: service_completed_successfully
