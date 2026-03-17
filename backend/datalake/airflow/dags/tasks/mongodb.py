@@ -38,6 +38,7 @@ def save_to_mongodb(**context):
             "siret": entities.get("siret"),
             "date_document": entities.get("date_document"),
             "raison_sociale": entities.get("raison_sociale"),
+            "siren": entities.get("siren"),
             "all_dates": entities.get("all_dates", []),
             "all_orgs": entities.get("all_orgs", []),
         }},
@@ -58,6 +59,7 @@ def save_to_mongodb(**context):
             {"siret": siret},
             {"$set": {
                 "siret": siret,
+                "siren": entities.get("siren"),
                 "raison_sociale": entities.get("raison_sociale"),
             }, "$addToSet": {
                 "documents": doc_id,

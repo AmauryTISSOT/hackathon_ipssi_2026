@@ -176,14 +176,34 @@ def analyze_document(**context):
     if not date_document and dates:
         date_document = dates[0]
 
-    # Classification du document
-    if is_invoice:
-        # Si Azure détecte une facture, on distingue facture/devis par mots-clés
-        kw_type = classify_by_keywords(full_text)
-        doc_type = "devis" if kw_type == "devis" else "facture"
-    else:
-        # Sinon, classification complète par mots-clés (kbis, attestation_urssaf, etc.)
-        doc_type = classify_by_keywords(full_text)
+    # Classification : toujours par mots-clés en priorité
+    doc_type = classify_by_keywords(full_text)
+    # Si Azure a détecté un document invoice ET que les mots-clés n'ont pas tranché
+    if is_invoice and doc_type == "inconnu":
+        doc_type = "facture"
+
+    # Extraction d'entités spécifiques K-bis par regex
+    siren = None
+    if doc_type == "kbis":
+        m = re.search(r"Dénomination.*?\n(.+)", full_text)
+        if m:
+            raison_sociale = m.group(1).strip()
+
+        m = re.search(r"SIREN\s*[:\s]*(\d[\d\s]{7,10}\d)", full_text)
+        if m:
+            siren = re.sub(r"\s", "", m.group(1))
+
+        m = re.search(r"Forme juridique\s*\n(.+)", full_text)
+        forme_juridique = m.group(1).strip() if m else None
+
+        m = re.search(r"Capital social\s*\n?(\d[\d\s]*(?:[.,]\d+)?\s*€)", full_text)
+        capital_social = m.group(1).strip() if m else None
+
+        m = re.search(r"NAF\s*/\s*APE\s*\n?(\d{2}\.\d{2}[A-Z])", full_text)
+        code_naf = m.group(1).strip() if m else None
+
+        m = re.search(r"Adresse du siège\s*\n(.+)", full_text)
+        adresse_siege = m.group(1).strip() if m else None
 
     # Fallback regex pour les montants si Azure ne les a pas trouvés
     if montant_ht is None or montant_ttc is None or tva is None:
@@ -232,11 +252,17 @@ def analyze_document(**context):
         "taux_tva": taux_tva,
         "montant_ttc": montant_ttc,
         "siret": siret,
+        "siren": siren,
         "date_document": date_document,
         "raison_sociale": raison_sociale,
         "doc_type": doc_type,
         "all_dates": dates,
         "all_orgs": all_orgs,
     }
+    if doc_type == "kbis":
+        entities["forme_juridique"] = forme_juridique
+        entities["capital_social"] = capital_social
+        entities["code_naf"] = code_naf
+        entities["adresse_siege"] = adresse_siege
     print(f"[AZURE] Entités extraites : {entities}")
     return entities
