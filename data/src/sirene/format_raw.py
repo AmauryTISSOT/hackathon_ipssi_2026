@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from data.data_sirene.utils.utils import get_project_root, safe
+from data.utils import get_project_root, safe
 
 ROOT_DIR = get_project_root()
 

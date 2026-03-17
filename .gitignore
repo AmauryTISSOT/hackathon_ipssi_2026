@@ -5,3 +5,5 @@ airflow/logs/
 node_modules/
 .DS_Store
 *.log
+.venv
+data/generated_files
