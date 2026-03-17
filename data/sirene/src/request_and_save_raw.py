@@ -1,12 +1,11 @@
 import os
 import json
-from pathlib import Path
 
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
 
-from data.data_sirene.utils.utils import get_project_root
+from data.utils import get_project_root
 
 ROOT_DIR = get_project_root()
 
