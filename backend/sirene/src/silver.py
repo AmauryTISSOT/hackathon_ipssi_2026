@@ -39,6 +39,8 @@ def extract_essential_fields(raw_data):
                              f"{safe(adresse.get(' : complementAdresseEtablissement', ''))}"
                              )
                             .strip())
+        periodes = etab.get("periodesEtablissement", [])
+        enseigne = periodes[0].get("enseigne1Etablissement") if periodes else None
         clean_data = {
             "siren": etab.get("siren"),
             "nic": etab.get("nic"),
@@ -49,9 +51,16 @@ def extract_essential_fields(raw_data):
             "etatAdministratifUniteLegale": unite.get("etatAdministratifUniteLegale"),
             "dateCreationUniteLegale": unite.get("dateCreationUniteLegale"),
             "denominationUniteLegale": unite.get("denominationUniteLegale"),
+            "categorieJuridiqueUniteLegale": unite.get("categorieJuridiqueUniteLegale"),
             "activitePrincipaleUniteLegale": unite.get("activitePrincipaleUniteLegale"),
             "nomenclatureActivitePrincipaleUniteLegale": unite.get("nomenclatureActivitePrincipaleUniteLegale"),
             "categorieEntreprise": unite.get("categorieEntreprise"),
+            "enseigneEtablissement": enseigne,
+            "sexeUniteLegale": unite.get("sexeUniteLegale"),
+            "nomUniteLegale": unite.get("nomUniteLegale"),
+            "nomUsageUniteLegale": unite.get("nomUsageUniteLegale"),
+            "prenom1UniteLegale": unite.get("prenom1UniteLegale"),
+            "prenomUsuelUniteLegale": unite.get("prenomUsuelUniteLegale"),
             # Adresse
             "adresseEtablissement": adresse_complete,
             "complementAdresseEtablissement": adresse.get("complementAdresseEtablissement"),
@@ -61,7 +70,7 @@ def extract_essential_fields(raw_data):
             "libelleVoieEtablissement": adresse.get("libelleVoieEtablissement"),
             "codePostalEtablissement": adresse.get("codePostalEtablissement"),
             "libelleCommuneEtablissement": adresse.get("libelleCommuneEtablissement"),
-            "metadata": {"pipeline_processing_date": datetime.now().isoformat()}
+            "metadata": {"pipeline_processing_date": datetime.now().isoformat(), "source": "api_sirene_v3"}
         }
         records.append(clean_data)
     return pd.DataFrame(records)
