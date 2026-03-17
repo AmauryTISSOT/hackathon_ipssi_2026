@@ -137,7 +137,7 @@ def generate_gerant_info(etab_data):
         'prenom': firstname,
         'naissance': f"Le {birth} à {birth_place}",
         'nationalite': "FRANCAIS",
-        'domicile': fake.address().replace('\n', ', ')
+        'domicile': get_adresse_complete(etab_data)
     }
 
 
@@ -160,7 +160,7 @@ def draw_header(c, width, margin, y, num_gestion):
     c.setFont('Helvetica', 9)
     greffe_lignes = [
         f"Greffe du tribunal de commerce de {fake.city()}",
-        fake.address().replace('\n', ', ')[:40],
+        fake.address().replace('\n', ', '),
         f"N° de gestion : {num_gestion}"
     ]
     x_left = margin
@@ -309,9 +309,7 @@ def run_kbis_generation():
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    df_silver = df_silver[df_silver['etatAdministratifUniteLegale'] == 'C']
-
-    limit = min(10, len(df_silver))
+    limit = min(100, len(df_silver))
     print(f"Génération de {limit} fichiers Kbis...")
 
     for index, row in df_silver.head(limit).iterrows():
