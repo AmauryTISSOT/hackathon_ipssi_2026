@@ -8,26 +8,30 @@ from minio import Minio
 
 def validate_and_store_gold(**context):
 
-    entities = context["ti"].xcom_pull(task_ids="analyze_document")
+    entities = context["ti"].xcom_pull(task_ids="store_silver")
     doc_name = context["ti"].xcom_pull(task_ids="store_bronze")
     alerts = []
 
-    ht = entities.get("montant_ht")
-    tva = entities.get("tva")
-    ttc = entities.get("montant_ttc")
-    if ht is not None and tva is not None and ttc is not None:
-        if abs(ttc - (ht + tva)) > 0.01:
+    doc_type = entities.get("doc_type")
+
+    # Validation montants uniquement pour factures et devis
+    if doc_type in ("facture", "devis"):
+        ht = entities.get("montant_ht")
+        tva = entities.get("tva")
+        ttc = entities.get("montant_ttc")
+        if ht is not None and tva is not None and ttc is not None:
+            if abs(ttc - (ht + tva)) > 0.01:
+                alerts.append({
+                    "type": "tva_mismatch",
+                    "message": f"HT ({ht}) + TVA ({tva}) = {ht + tva} != TTC ({ttc})",
+                    "severity": "error",
+                })
+        elif ttc is None or ht is None:
             alerts.append({
-                "type": "tva_mismatch",
-                "message": f"HT ({ht}) + TVA ({tva}) = {ht + tva} != TTC ({ttc})",
-                "severity": "error",
+                "type": "missing_amounts",
+                "message": "Montant HT ou TTC non trouvé",
+                "severity": "warning",
             })
-    elif ttc is None or ht is None:
-        alerts.append({
-            "type": "missing_amounts",
-            "message": "Montant HT ou TTC non trouvé",
-            "severity": "warning",
-        })
 
     siret = entities.get("siret")
     siret_valid = False
