@@ -1,11 +1,14 @@
+import io
+import json
+import os
 from datetime import datetime
+
+from minio import Minio
 
 
 def validate_and_store_gold(**context):
-    import json, os, io
-    from minio import Minio
 
-    entities = context["ti"].xcom_pull(task_ids="extract_ner")
+    entities = context["ti"].xcom_pull(task_ids="analyze_document")
     doc_name = context["ti"].xcom_pull(task_ids="store_bronze")
     alerts = []
 
