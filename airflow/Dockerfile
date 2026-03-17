@@ -18,5 +18,4 @@ RUN pip install --no-cache-dir \
 RUN pip install --no-cache-dir spacy pymongo
 RUN python -m spacy download fr_core_news_md
 
-# Pré-télécharger les modèles EasyOCR français au build
 RUN python -c "import easyocr; easyocr.Reader(['fr'], gpu=True)"
