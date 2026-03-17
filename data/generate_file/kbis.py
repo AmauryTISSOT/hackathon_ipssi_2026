@@ -8,21 +8,18 @@ from reportlab.lib.utils import simpleSplit
 from pathlib import Path
 from datetime import datetime
 
+from data.data_sirene.utils.utils import get_project_root
+
 fake = Faker('fr_FR')
 
 
-def get_project_root():
-    current_path = Path(__file__).resolve()
-    for parent in current_path.parents:
-        if (parent / ".env").exists():
-            return parent
-    return current_path.parent
-
-
 ROOT_DIR = get_project_root()
-BASE_PATH = os.path.join(ROOT_DIR, "data", "data_lake")
-SILVER_PATH = os.path.join(BASE_PATH, "silver", "api_sirene")
-OUTPUT_DIR = os.path.join(BASE_PATH, "raw", "kbis_3")
+BASE_PATH = os.path.join(ROOT_DIR, "data", "data_sirene")
+SILVER_PATH = os.path.join(BASE_PATH, "formatted_data")
+BASE_FAKE_PATH = os.path.join(BASE_PATH, "fake_data")
+execution_date = datetime.now().strftime("%Y%m%d_%H%M%S")
+OUTPUT_DIR = os.path.join(ROOT_DIR, "data", "fake_data", "kbis", execution_date)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
 def get_denomination_or_name(etab_data):
@@ -269,9 +266,9 @@ def generate_kbis_pdf(etab_data, output_path):
     y -= draw_field_row(c, y, "Domicile", gerant['domicile'], x_label, x_value, max_width)
     y -= line_height
     y = draw_section_header(c, margin, y, width, margin, "RENSEIGNEMENTS RELATIFS À L'ACTIVITÉ ET L'ÉTABLISSEMENT")
-    y -= draw_field_row(c, y, "Adresse établissement:", adresse, x_label, x_value, max_width)
+    y -= draw_field_row(c, y, "Adresse établissement", adresse, x_label, x_value, max_width)
     activite_exercee = fake.catch_phrase()
-    y -= draw_field_row(c, y, "Activité exercée :", activite_exercee, x_label, x_value, max_width)
+    y -= draw_field_row(c, y, "Activité exercée ", activite_exercee, x_label, x_value, max_width)
     date_creation = etab_a_utiliser.get('dateCreationEtablissement', '')
     if not date_creation or date_creation == '2000-01-01':
         date_creation = fake.date_between(start_date='-10y', end_date='-1y').strftime('%Y-%m-%d')

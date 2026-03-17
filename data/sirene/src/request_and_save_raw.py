@@ -6,21 +6,13 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 
-
-def get_project_root():
-    current_path = Path(__file__).resolve()
-    for parent in current_path.parents:
-        if (parent/".env").exists():
-            return parent
-    return current_path.parent
+from data.data_sirene.utils.utils import get_project_root
 
 ROOT_DIR = get_project_root()
 
 load_dotenv(os.path.join(ROOT_DIR,".env"))
-BASE_PATH = os.path.join(ROOT_DIR, "data", "data_lake")
-DIR_NAME = "api_sirene"
-BRONZE_PATH = os.path.join(BASE_PATH, "bronze", DIR_NAME)
-SILVER_PATH = os.path.join(BASE_PATH, "silver", DIR_NAME)
+BASE_PATH = os.path.join(ROOT_DIR, "data", "data_sirene")
+BRONZE_PATH = os.path.join(BASE_PATH, "raw_data")
 
 
 def get_api_token():

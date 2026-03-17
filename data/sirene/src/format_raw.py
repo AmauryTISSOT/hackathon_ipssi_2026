@@ -4,23 +4,15 @@ from pathlib import Path
 
 import pandas as pd
 
-def get_project_root():
-    current_path = Path(__file__).resolve()
-    for parent in current_path.parents:
-        if (parent / ".env").exists():
-            return parent
-    return current_path.parent
+from data.data_sirene.utils.utils import get_project_root, safe
 
 ROOT_DIR = get_project_root()
 
-BASE_PATH = os.path.join(ROOT_DIR, "data", "data_lake")
-DIR_NAME = "api_sirene"
-BRONZE_PATH = os.path.join(BASE_PATH, "bronze", DIR_NAME)
-SILVER_PATH = os.path.join(BASE_PATH, "silver", DIR_NAME)
+BASE_PATH = os.path.join(ROOT_DIR, "data", "data_sirene")
+BRONZE_PATH = os.path.join(BASE_PATH, "raw_data")
+SILVER_PATH = os.path.join(BASE_PATH, "formatted_data")
 
 
-def safe(x):
-    return x if x is not None else ""
 
 def extract_essential_fields(raw_data):
     etablissements = raw_data.get('etablissements', [])
