@@ -18,6 +18,10 @@ DIR_NAME = "api_sirene"
 BRONZE_PATH = os.path.join(BASE_PATH, "bronze", DIR_NAME)
 SILVER_PATH = os.path.join(BASE_PATH, "silver", DIR_NAME)
 
+
+def safe(x):
+    return x if x is not None else ""
+
 def extract_essential_fields(raw_data):
     etablissements = raw_data.get('etablissements', [])
     records = []
@@ -25,7 +29,16 @@ def extract_essential_fields(raw_data):
     for etab in etablissements:
         unite = etab.get("uniteLegale", {})
         adresse = etab.get("adresseEtablissement", {})
-
+        adresse_complete = ((f"{safe(adresse.get('numeroVoieEtablissement', ''))}"
+                             f"{safe(adresse.get('indiceRepetitionEtablissement', ''))}"
+                            f" {safe(adresse.get('typeVoieEtablissement', ''))} "
+                            f"{safe(adresse.get('libelleVoieEtablissement', ''))}, "
+                            f"{safe(adresse.get('codePostalEtablissement', ''))} "
+                            f"{safe(adresse.get('libelleCommuneEtablissement', ''))}"
+                             f" FRANCE"
+                             f"{safe(adresse.get(' : complementAdresseEtablissement', ''))}"
+                             )
+                            .strip())
         clean_data = {
             "siren": etab.get("siren"),
             "nic": etab.get("nic"),
@@ -40,6 +53,7 @@ def extract_essential_fields(raw_data):
             "nomenclatureActivitePrincipaleUniteLegale": unite.get("nomenclatureActivitePrincipaleUniteLegale"),
             "categorieEntreprise": unite.get("categorieEntreprise"),
             # Adresse
+            "adresseEtablissement": adresse_complete,
             "complementAdresseEtablissement": adresse.get("complementAdresseEtablissement"),
             "numeroVoieEtablissement": adresse.get("numeroVoieEtablissement"),
             "indiceRepetitionEtablissement": adresse.get("indiceRepetitionEtablissement"),
