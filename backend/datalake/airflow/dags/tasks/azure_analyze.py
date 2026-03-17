@@ -32,6 +32,10 @@ CLASSIFICATION_RULES = [
             "validité de l'offre",
             "bon pour accord",
             "référence devis",
+            "valable jusqu'au",
+            "accepter ce devis",
+            "devis n°",
+            "devis nº",
         ],
     },
     {
@@ -206,12 +210,18 @@ def analyze_document(**context):
 
         if tva is None:
             m = re.search(
-                r"(?:TVA|montant\s*TVA|total\s*TVA)\s*[:\s]*" + montant_pattern,
+                r"(?:TVA|montant\s*TVA|total\s*TVA)\s*(?:\([^)]*\))?\s*[:\s]*" + montant_pattern,
                 full_text,
                 re.IGNORECASE,
             )
             if m:
                 tva = _parse_french_number(m.group(1))
+
+    # Extraction du taux de TVA par regex (ex: "TVA (20%)" ou "TVA 20%")
+    taux_tva = None
+    m = re.search(r"TVA\s*\(?\s*(\d+(?:[.,]\d+)?)\s*%", full_text, re.IGNORECASE)
+    if m:
+        taux_tva = float(m.group(1).replace(",", "."))
 
     # Liste des organisations (depuis Azure ou raison_sociale)
     all_orgs = [raison_sociale] if raison_sociale else []
@@ -219,6 +229,7 @@ def analyze_document(**context):
     entities = {
         "montant_ht": montant_ht,
         "tva": tva,
+        "taux_tva": taux_tva,
         "montant_ttc": montant_ttc,
         "siret": siret,
         "date_document": date_document,
