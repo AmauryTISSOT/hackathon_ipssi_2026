@@ -5,4 +5,5 @@ RUN pip install --no-cache-dir \
     azure-ai-documentintelligence \
     minio \
     pymongo \
-    apache-airflow-providers-fab
+    apache-airflow-providers-fab \
+    apache-airflow-providers-amazon
