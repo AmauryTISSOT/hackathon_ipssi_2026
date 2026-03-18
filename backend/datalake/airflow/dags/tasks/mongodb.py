@@ -223,7 +223,8 @@ def save_to_mongodb(**context):
         db.alerts.insert_many(alert_docs)
 
     # 3. Company
-    siret = entities.get("siret")
+    siret_raw = entities.get("siret")
+    siret = str(siret_raw) if siret_raw is not None else None
     company_id = None
     if siret:
         siren_str = siret[:9]
