@@ -20,9 +20,13 @@ x-airflow-common: &airflow-common
     MONGO_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/hackathon?authSource=admin
     AZURE_DI_ENDPOINT: ${AZURE_DI_ENDPOINT}
     AZURE_DI_KEY: ${AZURE_DI_KEY}
+    # Remote logging vers MinIO
+    AIRFLOW__LOGGING__REMOTE_LOGGING: "true"
+    AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: s3://airflow-logs
+    AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: minio_s3
+    AIRFLOW_CONN_MINIO_S3: aws://${MINIO_ROOT_USER:-minioadmin}:${MINIO_ROOT_PASSWORD:-minioadmin123}@/?endpoint_url=http%3A%2F%2Fminio%3A9000
   volumes:
     - ./backend/datalake/airflow/dags:/opt/airflow/dags
-    - ./backend/datalake/airflow/logs:/opt/airflow/logs
     - ./backend/datalake/airflow/plugins:/opt/airflow/plugins
   networks:
     - hackathon-net
@@ -98,7 +102,8 @@ services:
       mc alias set myminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
       mc mb --ignore-existing myminio/bronze &&
       mc mb --ignore-existing myminio/silver &&
-      mc mb --ignore-existing myminio/gold
+      mc mb --ignore-existing myminio/gold &&
+      mc mb --ignore-existing myminio/airflow-logs
       "
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
