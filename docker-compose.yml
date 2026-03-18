@@ -35,6 +35,21 @@ x-airflow-common: &airflow-common
       condition: service_healthy
 
 services:
+  frontend:
+    build: ./front
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+      VITE_USE_MOCK_AUTH: ${VITE_USE_MOCK_AUTH:-true}
+    volumes:
+      - ./front:/app
+      - /app/node_modules
+    networks:
+      - hackathon-net
+
   mongodb:
     image: mongo:latest
     container_name: mongodb
