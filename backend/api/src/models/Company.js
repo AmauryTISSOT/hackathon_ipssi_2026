@@ -31,6 +31,7 @@ const CompanySchema = new Schema({
     prenom: { type: String },
     email: { type: String },
     date_naissance: { type: Date },
+    activity: {type: String},
     lieu_naissance: { type: String },
     nationalite: { type: String },
     fonction: { type: String },
