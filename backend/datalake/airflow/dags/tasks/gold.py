@@ -1,32 +1,40 @@
+import io
+import json
+import os
 from datetime import datetime
+
+from minio import Minio
 
 
 def validate_and_store_gold(**context):
-    import json, os, io
-    from minio import Minio
 
-    entities = context["ti"].xcom_pull(task_ids="extract_ner")
+    entities = context["ti"].xcom_pull(task_ids="store_silver")
     doc_name = context["ti"].xcom_pull(task_ids="store_bronze")
     alerts = []
 
-    ht = entities.get("montant_ht")
-    tva = entities.get("tva")
-    ttc = entities.get("montant_ttc")
-    if ht is not None and tva is not None and ttc is not None:
-        if abs(ttc - (ht + tva)) > 0.01:
-            alerts.append({
-                "type": "tva_mismatch",
-                "message": f"HT ({ht}) + TVA ({tva}) = {ht + tva} != TTC ({ttc})",
-                "severity": "error",
-            })
-    elif ttc is None or ht is None:
-        alerts.append({
-            "type": "missing_amounts",
-            "message": "Montant HT ou TTC non trouvé",
-            "severity": "warning",
-        })
+    doc_type = entities.get("doc_type")
 
-    siret = entities.get("siret")
+    # Validation montants uniquement pour factures et devis
+    if doc_type in ("facture", "devis"):
+        ht = entities.get("montant_ht")
+        tva = entities.get("tva")
+        ttc = entities.get("montant_ttc")
+        if ht is not None and tva is not None and ttc is not None:
+            if abs(ttc - (ht + tva)) > 0.01:
+                alerts.append({
+                    "type": "tva_mismatch",
+                    "message": f"HT ({ht}) + TVA ({tva}) = {ht + tva} != TTC ({ttc})",
+                    "severity": "error",
+                })
+        elif ttc is None or ht is None:
+            alerts.append({
+                "type": "missing_amounts",
+                "message": "Montant HT ou TTC non trouvé",
+                "severity": "warning",
+            })
+
+    siret_raw = entities.get("siret")
+    siret = str(siret_raw) if siret_raw is not None else None
     siret_valid = False
     if siret and len(siret) == 14 and siret.isdigit():
         siren = siret[:9]

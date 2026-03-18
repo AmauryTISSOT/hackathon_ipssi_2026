@@ -18,6 +18,8 @@ x-airflow-common: &airflow-common
     MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
     MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
     MONGO_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/hackathon?authSource=admin
+    AZURE_DI_ENDPOINT: ${AZURE_DI_ENDPOINT}
+    AZURE_DI_KEY: ${AZURE_DI_KEY}
   volumes:
     - ./backend/datalake/airflow/dags:/opt/airflow/dags
     - ./backend/datalake/airflow/logs:/opt/airflow/logs
@@ -67,7 +69,7 @@ services:
       - hackathon-net
 
   minio:
-    image: minio/minio:${MINIO_VERSION:-latest}
+    image: minio/minio:latest
     container_name: minio
     hostname: minio
     restart: unless-stopped
@@ -88,13 +90,19 @@ services:
       - hackathon-net
 
   minio-init:
-    build: ./backend/datalake/scripts
+    image: minio/mc
     container_name: minio-init
     restart: "no"
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+      mc mb --ignore-existing myminio/bronze &&
+      mc mb --ignore-existing myminio/silver &&
+      mc mb --ignore-existing myminio/gold
+      "
     environment:
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
     depends_on:
       minio:
         condition: service_healthy
@@ -169,13 +177,6 @@ services:
     container_name: airflow-scheduler
     command: scheduler
     restart: unless-stopped
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     depends_on:
       airflow-init:
         condition: service_completed_successfully

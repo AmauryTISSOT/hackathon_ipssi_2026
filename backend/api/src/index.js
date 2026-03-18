@@ -28,7 +28,7 @@ app.use(errorHandler);
 const startServer = async () => {
   try {
     await connectDatabase();
-    
+
     app.listen(PORT, () => {
       console.log(`server running on port ${PORT}`);
     });
