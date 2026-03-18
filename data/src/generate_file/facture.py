@@ -10,7 +10,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 
 fake = Faker("fr_FR")
 
-OUTPUT_DIR = "../fake_data/factures"
+OUTPUT_DIR = "fake_data/factures"
 NUM_FACTURES = 10
 
 TVA_RATE = 0.20

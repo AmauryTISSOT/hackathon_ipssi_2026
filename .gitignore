@@ -6,4 +6,6 @@ node_modules/
 .DS_Store
 *.log
 .venv
-data/generated_files
+fake_data/
+data/fake_data/
+data/data_sirene

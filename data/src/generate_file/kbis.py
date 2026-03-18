@@ -8,7 +8,7 @@ from reportlab.lib.utils import simpleSplit
 from pathlib import Path
 from datetime import datetime
 
-from data.data_sirene.utils.utils import get_project_root
+from utils import get_project_root
 
 fake = Faker('fr_FR')
 
