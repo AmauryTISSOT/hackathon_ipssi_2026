@@ -2,36 +2,39 @@ import {
     uploadAndTrigger,
     getDagRunStatus,
 } from "../services/documentService.js";
+import Document from "../models/Document.js";
 
-/**
- * Upload un document dans MinIO (bronze) et déclenche le DAG Airflow.
- * @param {import('express').Request} req - Requête Express avec fichier multer (req.file)
- * @param {import('express').Response} res - Réponse Express
- * @returns {Promise<void>} 201 avec { dag_run_id, doc_name } ou 400/500 en cas d'erreur
- */
 export const uploadDocument = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: "Aucun fichier fourni" });
         }
 
-        const result = await uploadAndTrigger(req.file);
+        // req.user est ajouté
+        const result = await uploadAndTrigger(req.file, req.user._id);
         res.status(201).json(result);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-/**
- * Récupère le statut d'un DAG run Airflow.
- * @param {import('express').Request} req - Requête Express avec req.params.dagRunId
- * @param {import('express').Response} res - Réponse Express
- * @returns {Promise<void>} 200 avec le statut du DAG run ou 500 en cas d'erreur
- */
 export const getDocumentStatus = async (req, res) => {
     try {
         const status = await getDagRunStatus(req.params.dagRunId);
         res.status(200).json(status);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Retourne l'historique des documents uploadés par l'utilisateur connecté
+export const getHistory = async (req, res) => {
+    try {
+        const documents = await Document.find({ user_id: req.user._id })
+            .select('filename doc_type status createdAt dag_run_id')
+            .sort({ createdAt: -1 }); // du plus récent au plus ancien
+
+        res.status(200).json({ documents });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -4,6 +4,7 @@ import { protect } from "../middleware/authMiddleware.js";
 import {
     uploadDocument,
     getDocumentStatus,
+    getHistory,
 } from "../controllers/documentController.js";
 
 const router = Router();
@@ -24,5 +25,12 @@ router.post("/upload", protect, upload.single("file"), uploadDocument);
  * Authentification requise (JWT Bearer token).
  */
 router.get("/status/:dagRunId", protect, getDocumentStatus);
+
+/**
+ * GET /api/documents/history
+ * Retourne la liste des documents uploadés par l'utilisateur connecté.
+ * Authentification requise (JWT Bearer token).
+ */
+router.get("/history", protect, getHistory);
 
 export default router;
