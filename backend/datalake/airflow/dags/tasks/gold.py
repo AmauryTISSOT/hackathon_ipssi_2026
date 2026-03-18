@@ -33,7 +33,8 @@ def validate_and_store_gold(**context):
                 "severity": "warning",
             })
 
-    siret = entities.get("siret")
+    siret_raw = entities.get("siret")
+    siret = str(siret_raw) if siret_raw is not None else None
     siret_valid = False
     if siret and len(siret) == 14 and siret.isdigit():
         siren = siret[:9]
