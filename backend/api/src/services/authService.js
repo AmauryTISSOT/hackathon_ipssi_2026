@@ -10,16 +10,17 @@ const generateToken = (userId) => {
   );
 };
 
-export const register = async ({ email, password }) => {
+export const register = async ({ email, password, role }) => {
   const existingUser = await User.findOne({ email });
   if (existingUser) throw new Error('Email déjà utilisé');
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await User.create({ email, password: hashedPassword });
+  // Le rôle peut être passé à la création, sinon il prend la valeur par défaut 'user'
+  const user = await User.create({ email, password: hashedPassword, role });
 
   const token = generateToken(user._id);
 
-  return { user: { id: user._id, email: user.email }, token };
+  return { user: { id: user._id, email: user.email, role: user.role }, token };
 };
 
 export const login = async ({ email, password }) => {
@@ -31,5 +32,5 @@ export const login = async ({ email, password }) => {
 
   const token = generateToken(user._id);
 
-  return { user: { id: user._id, email: user.email }, token };
+  return { user: { id: user._id, email: user.email, role: user.role }, token };
 };

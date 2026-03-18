@@ -13,6 +13,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    role: {
+      type: String,
+      enum: ['user', 'comptable'], // seules ces deux valeurs sont acceptées
+      default: 'user',             // par défaut, tout nouvel inscrit est un utilisateur normal
+    },
   },
   {
     timestamps: true,
