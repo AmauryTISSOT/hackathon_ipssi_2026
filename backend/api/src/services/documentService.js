@@ -1,5 +1,6 @@
 import axios from "axios";
 import minioClient from "../config/minio.js";
+import Document from "../models/Document.js";
 
 /** URL de l'API Airflow (hostname Docker en prod, localhost en dev) */
 const AIRFLOW_API_URL =
@@ -50,10 +51,12 @@ const airflowRequest = async (method, url, data) => {
 
 /**
  * Upload un fichier dans MinIO (bucket bronze) puis déclenche le DAG Airflow document_pipeline.
+ * Crée également une entrée dans MongoDB pour suivre l'historique de l'utilisateur.
  * @param {object} file - Objet fichier multer (req.file) avec buffer et originalname
+ * @param {string} userId - ID de l'utilisateur connecté (req.user._id)
  * @returns {Promise<{dag_run_id: string, doc_name: string}>} Identifiants du DAG run créé
  */
-export const uploadAndTrigger = async (file) => {
+export const uploadAndTrigger = async (file, userId) => {
     // Upload du document brut dans le bucket bronze (première couche du Data Lake)
     await minioClient.putObject("bronze", file.originalname, file.buffer);
 
@@ -66,8 +69,19 @@ export const uploadAndTrigger = async (file) => {
         },
     );
 
+    const dagRunId = response.data.dag_run_id;
+
+    // On sauvegarde le document avec status "pending"
+    // Airflow mettra à jour le status à "processed" une fois le pipeline terminé
+    await Document.create({
+        filename: file.originalname,
+        status: 'pending',
+        user_id: userId,
+        dag_run_id: dagRunId,
+    });
+
     return {
-        dag_run_id: response.data.dag_run_id,
+        dag_run_id: dagRunId,
         doc_name: file.originalname,
     };
 };
@@ -77,6 +91,7 @@ export const uploadAndTrigger = async (file) => {
  * @param {string} dagRunId - Identifiant du DAG run
  * @returns {Promise<object>} Statut complet du DAG run (state, start_date, end_date, etc.)
  */
+
 export const getDagRunStatus = async (dagRunId) => {
     const response = await airflowRequest(
         "get",
