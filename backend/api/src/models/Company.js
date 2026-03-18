@@ -3,7 +3,7 @@ import mongoose, { Schema } from 'mongoose';
 const CompanySchema = new Schema({
   siren: { type: String },
   nic: { type: String },
-  siret: { type: String },
+  siret: { type: String, unique: true},
   date_creation_etablissement: { type: Date },
   etablissement_siege: { type: Boolean },
   etat_administratif_unite_legale: { type: String },
@@ -13,7 +13,7 @@ const CompanySchema = new Schema({
   nomenclature_activite_principale_unite_legale: { type: String },
   categorie_entreprise: { type: String },
   enseigne_etablissement: { type: String },
-  sexe_unite_legale: { type: String, enum: ['M', 'F'] },
+  sexe_unite_legale: { type: String, enum: ['M', 'F', 'Pas spécifié'], default : 'Pas spécifié' },
   nom_unite_legale: { type: String },
   nom_usage_unite_legale: { type: String },
   prenom_1_unite_legale: { type: String },
@@ -26,6 +26,16 @@ const CompanySchema = new Schema({
   libelle_voie_etablissement: { type: String },
   code_postal_etablissement: { type: String },
   libelle_commune_etablissement: { type: String },
+  manager : {
+    nom: { type: String },
+    prenom: { type: String },
+    email: { type: String },
+    date_naissance: { type: Date },
+    lieu_naissance: { type: String },
+    nationalite: { type: String },
+    fonction: { type: String },
+    telephone: { type: String }
+  },
   metadata: { type: {
     pipeline_processing_date: { type: Date },
     source: { type: String },
