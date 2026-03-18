@@ -141,14 +141,19 @@ export async function createDocument({ file }) {
   const formData = new FormData();
   formData.append("file", file);
   try {
-    const response = await request("/api/documents", {
+    const response = await request("/api/documents/upload", {
       method: "POST",
       body: formData,
       token,
       isFormData: true
     });
 
-    return response.document;
+    // L'API renvoie { dag_run_id, doc_name } — on normalise pour le composant
+    return {
+      fileName: response.doc_name,
+      dagRunId: response.dag_run_id,
+      status: "pending"
+    };
   } catch {
     const currentUser = getCurrentUser();
     if (!currentUser) {
@@ -191,7 +196,7 @@ export async function createDocument({ file }) {
 export async function listUserDocuments() {
   const token = getAuthToken();
   try {
-    const response = await request("/api/documents/mine", { token });
+    const response = await request("/api/documents/history", { token });
     return response.documents;
   } catch {
     const currentUser = getCurrentUser();
@@ -226,4 +231,65 @@ export async function listFolders() {
     }, {});
     return Object.entries(byFolder).map(([name, count]) => ({ name, count }));
   }
+}
+
+export async function listInvoices() {
+  const token = getAuthToken();
+  const response = await request("/api/invoices", { token });
+  return response.invoices;
+}
+
+export async function listQuotations() {
+  const token = getAuthToken();
+  const response = await request("/api/quotations", { token });
+  return response.quotations;
+}
+
+export async function listKbis() {
+  const token = getAuthToken();
+  const response = await request("/api/kbis", { token });
+  return response.kbis;
+}
+
+export async function listCertificates() {
+  const token = getAuthToken();
+  const response = await request("/api/certificates-urssaf", { token });
+  return response.certificates;
+}
+
+export async function listRibs() {
+  const token = getAuthToken();
+  const response = await request("/api/ribs", { token });
+  return response.ribs;
+}
+
+export async function listFailedDocuments() {
+  const token = getAuthToken();
+  const response = await request("/api/documents/history", { token });
+  return (response.documents || []).filter((d) => d.status === "failed");
+}
+
+export async function deleteInvoice(id) {
+  const token = getAuthToken();
+  return request(`/api/invoices/${id}`, { method: "DELETE", token });
+}
+
+export async function deleteQuotation(id) {
+  const token = getAuthToken();
+  return request(`/api/quotations/${id}`, { method: "DELETE", token });
+}
+
+export async function deleteKbis(id) {
+  const token = getAuthToken();
+  return request(`/api/kbis/${id}`, { method: "DELETE", token });
+}
+
+export async function deleteCertificate(id) {
+  const token = getAuthToken();
+  return request(`/api/certificates-urssaf/${id}`, { method: "DELETE", token });
+}
+
+export async function deleteRib(id) {
+  const token = getAuthToken();
+  return request(`/api/ribs/${id}`, { method: "DELETE", token });
 }

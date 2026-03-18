@@ -26,13 +26,29 @@ function sortByConfig(items, sortConfig) {
   });
 }
 
+// Correspondance entre les statuts de l'API et les labels affichés
+const STATUS_LABELS = {
+  pending: "En cours",
+  processed: "Traite",
+  failed: "Non conforme"
+};
+
+// Correspondance entre doc_type renvoyé par Airflow et labels lisibles
+const DOC_TYPE_LABELS = {
+  facture: "Facture fournisseur",
+  devis: "Devis",
+  kbis: "KBIS",
+  attestation_urssaf: "Attestation URSSAF",
+  rib: "RIB"
+};
+
 function normalizeDocument(document) {
   return {
-    id: document.id,
-    fileName: document.fileName,
-    docType: document.docType,
-    status: document.status,
-    date: document.date
+    id: document._id,
+    fileName: document.filename,
+    docType: DOC_TYPE_LABELS[document.doc_type] ?? document.doc_type ?? "En attente",
+    status: STATUS_LABELS[document.status] ?? document.status,
+    date: document.createdAt ? document.createdAt.slice(0, 10) : "-"
   };
 }
 
@@ -99,7 +115,6 @@ function ClientRecapPage() {
     <AppLayout title="Gestion des documents" links={userLinks}>
       <h2 className="section-title">Historique des depots</h2>
       <div className="table-wrapper">
-        {loading ? <p className="message">Chargement des documents...</p> : null}
         {error ? <p className="message error">{error}</p> : null}
         <table>
           <thead>

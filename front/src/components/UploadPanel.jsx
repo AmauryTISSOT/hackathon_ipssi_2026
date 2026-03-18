@@ -15,10 +15,7 @@ function UploadPanel({ onSubmit }) {
 
     try {
       const created = await onSubmit({ file });
-      const fileName = created.fileName;
-      const docType = created.docType;
-      const status = created.status;
-      setSuccess(`Document "${fileName}" depose. Analyse IA: type "${docType}", statut "${status}".`);
+      setSuccess(`Document "${created.fileName}" déposé avec succès. Analyse en cours...`);
     } catch {
       setError("Echec de l'envoi du document.");
     }

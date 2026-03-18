@@ -1,6 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import AppLayout from "../components/AppLayout";
-import { listAllDocuments, listFolders } from "../services/documentApi";
+import DataTable from "../components/DataTable";
+import {
+  listInvoices,
+  listQuotations,
+  listKbis,
+  listCertificates,
+  listRibs,
+  listFailedDocuments,
+  listAllDocuments,
+  listFolders,
+  deleteInvoice,
+  deleteQuotation,
+  deleteKbis,
+  deleteCertificate,
+  deleteRib,
+} from "../services/documentApi";
 
 const comptableLinks = [
   { to: "/comptable/gestion", label: "Gestion des documents" },
@@ -10,49 +25,205 @@ const comptableLinks = [
 const tableTabs = [
   "Facture fournisseur",
   "Devis",
-  "Attestation SIRET",
+  "KBIS",
+  "Attestation URSSAF",
   "Document non conforme",
   "RIB",
   "Dossiers"
 ];
 
-function normalizeDocument(document) {
+function normalizeInvoice(doc) {
+  const company = doc.company_id;
   return {
-    id: document.id,
-    fileName: document.fileName,
-    docType: document.docType,
-    date: document.date,
-    folder: document.folder,
-    siret: document.siret,
-    tva: document.tva,
-    amount: document.amount,
-    ownerName: document.ownerName
+    id: doc._id,
+    fileName: company?.denomination_unite_legale ?? "-",
+    siret: company?.siret ?? "-",
+    tva: doc.total_tax != null ? `${doc.total_tax}€` : "-",
+    amount: doc.total_before_tax != null ? `${doc.total_before_tax}€ / ${doc.total}€` : "-",
+    date: doc.issue_date ? doc.issue_date.slice(0, 10) : "-",
+    ownerName: company?.denomination_unite_legale ?? "-",
   };
 }
 
-function buildFoldersFromDocuments(documents) {
-  const byFolder = documents.reduce((accumulator, document) => {
-    const folderName = document.folder;
-    if (!accumulator[folderName]) {
-      accumulator[folderName] = 0;
-    }
-    accumulator[folderName] += 1;
-    return accumulator;
-  }, {});
-
-  return Object.entries(byFolder).map(([name, count]) => ({ name, count }));
+function normalizeQuotation(doc) {
+  const company = doc.company_id;
+  return {
+    id: doc._id,
+    fileName: doc.label ?? "-",
+    siret: company?.siret ?? "-",
+    tva: doc.total_tva != null ? `${doc.total_tva}€` : "-",
+    amount: doc.total_before_tax != null ? `${doc.total_before_tax}€ / ${doc.total}€` : "-",
+    date: doc.issue_date ? doc.issue_date.slice(0, 10) : "-",
+    ownerName: doc.issuer?.name ?? "-",
+  };
 }
+
+function normalizeKbis(doc) {
+  const legal = doc.legal_entity ?? {};
+  const activity = doc.information_relating_activity_main_establishment ?? {};
+  return {
+    id: doc._id,
+    trading_name: activity.trading_name ?? "-",
+    establishment_address: activity.establishment_address ?? "-",
+    legal_form: legal.legal_form ?? "-",
+  };
+}
+
+function normalizeCertificate(doc) {
+  return {
+    id: doc._id,
+    siret: doc.siret ?? "-",
+    security_code: doc.security_code ?? "-",
+    international_identifier: doc.international_identifier ?? "-",
+    place_at: doc.place_at ? String(doc.place_at).slice(0, 10) : "-",
+    siren: doc.siren ?? "-",
+    social_security: doc.social_security ?? "-",
+  };
+}
+
+function normalizeRib(doc) {
+  const company = doc.company_id;
+  return {
+    id: doc._id,
+    iban: doc.iban ?? "-",
+    bic: doc.bic ?? "-",
+    bank_code: doc.bank_code ?? "-",
+    agency_code: doc.agency_code ?? "-",
+    account_number: doc.account_number ?? "-",
+    key: doc.key ?? "-",
+    registered_address: doc.registered_address ?? "-",
+    siret: company?.siret ?? "-",
+    date: doc.createdAt ? doc.createdAt.slice(0, 10) : "-",
+  };
+}
+
+function normalizeFailedDoc(doc) {
+  return {
+    id: doc._id,
+    fileName: doc.filename ?? "-",
+    date: doc.createdAt ? doc.createdAt.slice(0, 10) : "-",
+  };
+}
+
+function normalizeDossierDoc(doc) {
+  return {
+    id: doc.id,
+    fileName: doc.fileName,
+    docType: doc.docType,
+    date: doc.date,
+    folder: doc.folder,
+  };
+}
+
+const TAB_CONFIG = {
+  "Facture fournisseur": {
+    fetch: listInvoices,
+    delete: deleteInvoice,
+    normalize: normalizeInvoice,
+    columns: [
+      { key: "fileName", label: "Nom document", sortable: true },
+      { key: "siret", label: "SIRET" },
+      { key: "tva", label: "TVA" },
+      { key: "amount", label: "Montant HT/TTC" },
+      { key: "date", label: "Date", sortable: true },
+      { key: "ownerName", label: "Proprietaire", sortable: true },
+    ],
+    showView: true,
+    emptyMessage: "Aucune facture trouvee.",
+  },
+  "Devis": {
+    fetch: listQuotations,
+    delete: deleteQuotation,
+    normalize: normalizeQuotation,
+    columns: [
+      { key: "fileName", label: "Libelle", sortable: true },
+      { key: "siret", label: "SIRET" },
+      { key: "tva", label: "TVA" },
+      { key: "amount", label: "Montant HT/TTC" },
+      { key: "date", label: "Date", sortable: true },
+      { key: "ownerName", label: "Emetteur", sortable: true },
+    ],
+    showView: true,
+    emptyMessage: "Aucun devis trouve.",
+  },
+  "KBIS": {
+    fetch: listKbis,
+    delete: deleteKbis,
+    normalize: normalizeKbis,
+    columns: [
+      { key: "trading_name", label: "Nom d'entite", sortable: true },
+      { key: "establishment_address", label: "Adresse" },
+      { key: "legal_form", label: "Entite legale", sortable: true },
+    ],
+    showView: true,
+    emptyMessage: "Aucun KBIS trouve.",
+  },
+  "Attestation URSSAF": {
+    fetch: listCertificates,
+    delete: deleteCertificate,
+    normalize: normalizeCertificate,
+    columns: [
+      { key: "siret", label: "SIRET", sortable: true },
+      { key: "siren", label: "SIREN" },
+      { key: "security_code", label: "Code securite" },
+      { key: "international_identifier", label: "Identifiant international" },
+      { key: "social_security", label: "Securite sociale" },
+      { key: "place_at", label: "Adresse", sortable: true },
+    ],
+    showView: true,
+    emptyMessage: "Aucune attestation URSSAF trouvee.",
+  },
+  "Document non conforme": {
+    fetch: listFailedDocuments,
+    normalize: normalizeFailedDoc,
+    columns: [
+      { key: "fileName", label: "Nom document", sortable: true },
+      { key: "date", label: "Date", sortable: true },
+    ],
+    showView: false,
+    emptyMessage: "Aucun document non conforme.",
+  },
+  "RIB": {
+    fetch: listRibs,
+    delete: deleteRib,
+    normalize: normalizeRib,
+    columns: [
+      { key: "iban", label: "IBAN", sortable: true },
+      { key: "bic", label: "BIC" },
+      { key: "bank_code", label: "Code banque" },
+      { key: "agency_code", label: "Code guichet" },
+      { key: "account_number", label: "N° compte" },
+      { key: "key", label: "Cle RIB" },
+      { key: "registered_address", label: "Adresse" },
+    ],
+    showView: true,
+    emptyMessage: "Aucun RIB trouve.",
+  },
+};
+
+const DOSSIERS_COLUMNS = [
+  { key: "fileName", label: "Nom document", sortable: true },
+  { key: "docType", label: "Type", sortable: true },
+  { key: "date", label: "Date", sortable: true },
+  { key: "folder", label: "Dossier", sortable: true },
+];
 
 function sortByConfig(items, sortConfig) {
   return items.slice().sort((first, second) => {
     const firstValue = first[sortConfig.key];
     const secondValue = second[sortConfig.key];
-    const result = String(firstValue).localeCompare(String(secondValue), "fr", {
-      numeric: true
-    });
-    if (sortConfig.direction === "asc") return result;
-    return -result;
+    const result = String(firstValue).localeCompare(String(secondValue), "fr", { numeric: true });
+    return sortConfig.direction === "asc" ? result : -result;
   });
+}
+
+function buildFoldersFromDocuments(documents) {
+  const byFolder = documents.reduce((acc, doc) => {
+    if (!acc[doc.folder]) acc[doc.folder] = 0;
+    acc[doc.folder] += 1;
+    return acc;
+  }, {});
+  return Object.entries(byFolder).map(([name, count]) => ({ name, count }));
 }
 
 function ComptableRecapPage() {
@@ -66,95 +237,94 @@ function ComptableRecapPage() {
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setError("");
+    setDocuments([]);
 
     const loadData = async () => {
-      setLoading(true);
-      setError("");
       try {
-        const docsResponse = await listAllDocuments();
-        const foldersResponse = await listFolders();
-        if (!cancelled) {
-          setDocuments(docsResponse.map(normalizeDocument));
-          setFolders(foldersResponse);
+        if (activeTab === "Dossiers") {
+          const [docsResponse, foldersResponse] = await Promise.all([
+            listAllDocuments(),
+            listFolders(),
+          ]);
+          if (!cancelled) {
+            setDocuments(docsResponse.map(normalizeDossierDoc));
+            setFolders(foldersResponse);
+          }
+        } else {
+          const config = TAB_CONFIG[activeTab];
+          const items = await config.fetch();
+          if (!cancelled) {
+            setDocuments((items ?? []).map(config.normalize));
+          }
         }
       } catch {
         if (!cancelled) {
           setError("Impossible de charger les documents.");
-          setDocuments([]);
-          setFolders([]);
         }
       }
       if (!cancelled) setLoading(false);
     };
 
     loadData();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => { cancelled = true; };
+  }, [activeTab]);
 
   const filteredDocuments = useMemo(() => {
-    let scopedDocuments =
-      activeTab === "Dossiers"
-        ? documents
-        : documents.filter((document) => document.docType === activeTab);
-
+    let scoped = documents;
     if (activeTab === "Dossiers" && selectedFolder !== "Tous") {
-      scopedDocuments = scopedDocuments.filter((document) => document.folder === selectedFolder);
+      scoped = scoped.filter((doc) => doc.folder === selectedFolder);
     }
-
-    return sortByConfig(scopedDocuments, sortConfig);
+    return sortByConfig(scoped, sortConfig);
   }, [activeTab, documents, selectedFolder, sortConfig]);
 
   const toggleSort = (key) => {
-    setSortConfig((current) => {
-      if (current.key === key) {
-        return { key, direction: current.direction === "asc" ? "desc" : "asc" };
-      }
-      return { key, direction: "asc" };
-    });
-  };
-
-  const sortLabel = (key, label) => {
-    if (sortConfig.key !== key) return label;
-    return `${label} ${sortConfig.direction === "asc" ? "↑" : "↓"}`;
+    setSortConfig((current) => ({
+      key,
+      direction: current.key === key && current.direction === "asc" ? "desc" : "asc",
+    }));
   };
 
   const handleViewDocument = (document) => {
-    const fileUrl = document.fileUrl;
-    if (fileUrl) {
-      window.open(fileUrl, "_blank", "noopener,noreferrer");
+    if (document.fileUrl) {
+      window.open(document.fileUrl, "_blank", "noopener,noreferrer");
       return;
     }
-
     window.alert(`Apercu indisponible pour "${document.fileName}".`);
   };
 
-  const handleDeleteDocument = (documentId) => {
-    setDocuments((currentDocuments) => {
-      const updatedDocuments = currentDocuments.filter((document) => document.id !== documentId);
-      setFolders(buildFoldersFromDocuments(updatedDocuments));
-      if (selectedFolder !== "Tous" && !updatedDocuments.some((doc) => doc.folder === selectedFolder)) {
+  const handleDeleteDocument = async (documentId) => {
+    const config = TAB_CONFIG[activeTab];
+    if (config?.delete) {
+      try {
+        await config.delete(documentId);
+      } catch {
+        setError("Impossible de supprimer le document.");
+        return;
+      }
+    }
+    setDocuments((current) => {
+      const updated = current.filter((doc) => doc.id !== documentId);
+      setFolders(buildFoldersFromDocuments(updated));
+      if (selectedFolder !== "Tous" && !updated.some((doc) => doc.folder === selectedFolder)) {
         setSelectedFolder("Tous");
       }
-      return updatedDocuments;
+      return updated;
     });
   };
 
   return (
     <AppLayout title="Gestion des documents" links={comptableLinks}>
-      {loading ? <p className="message">Chargement des documents...</p> : null}
       {error ? <p className="message error">{error}</p> : null}
+
       <div className="tabs">
         {tableTabs.map((tab) => (
           <button
             key={tab}
             type="button"
             className={tab === activeTab ? "tab-button active" : "tab-button"}
-            onClick={() => {
-              setActiveTab(tab);
-              setSelectedFolder("Tous");
-            }}
+            onClick={() => { setActiveTab(tab); setSelectedFolder("Tous"); }}
           >
             {tab}
           </button>
@@ -186,133 +356,28 @@ function ComptableRecapPage() {
               </button>
             ))}
           </div>
-
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>
-                    <button type="button" className="sort-button" onClick={() => toggleSort("fileName")}>
-                      {sortLabel("fileName", "Nom document")}
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" className="sort-button" onClick={() => toggleSort("docType")}>
-                      {sortLabel("docType", "Type")}
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" className="sort-button" onClick={() => toggleSort("date")}>
-                      {sortLabel("date", "Date")}
-                    </button>
-                  </th>
-                  <th>
-                    <button type="button" className="sort-button" onClick={() => toggleSort("folder")}>
-                      {sortLabel("folder", "Dossier")}
-                    </button>
-                  </th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDocuments.length > 0 ? (
-                  filteredDocuments.map((document) => (
-                    <tr key={document.id}>
-                      <td>{document.fileName}</td>
-                      <td>{document.docType}</td>
-                      <td>{document.date}</td>
-                      <td>{document.folder}</td>
-                      <td className="actions-cell">
-                        <button
-                          type="button"
-                          className="table-action-button"
-                          onClick={() => handleViewDocument(document)}
-                        >
-                          Visualiser
-                        </button>
-                        <button
-                          type="button"
-                          className="table-action-button danger"
-                          onClick={() => handleDeleteDocument(document.id)}
-                        >
-                          Supprimer
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5}>
-                      {loading ? "Chargement..." : "Aucun document trouve pour ce filtre."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={DOSSIERS_COLUMNS}
+            rows={filteredDocuments}
+            loading={loading}
+            sortConfig={sortConfig}
+            onSort={toggleSort}
+            onView={handleViewDocument}
+            onDelete={handleDeleteDocument}
+            emptyMessage="Aucun document pour ce filtre."
+          />
         </>
       ) : (
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>
-                  <button type="button" className="sort-button" onClick={() => toggleSort("fileName")}>
-                    {sortLabel("fileName", "Nom document")}
-                  </button>
-                </th>
-                <th>SIRET</th>
-                <th>TVA</th>
-                <th>Montant HT/TTC</th>
-                <th>
-                  <button type="button" className="sort-button" onClick={() => toggleSort("date")}>
-                    {sortLabel("date", "Date")}
-                  </button>
-                </th>
-                <th>
-                  <button type="button" className="sort-button" onClick={() => toggleSort("ownerName")}>
-                    {sortLabel("ownerName", "Proprietaire")}
-                  </button>
-                </th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDocuments.length > 0 ? (
-                filteredDocuments.map((document) => (
-                  <tr key={document.id}>
-                    <td>{document.fileName}</td>
-                    <td>{document.siret}</td>
-                    <td>{document.tva}</td>
-                    <td>{document.amount}</td>
-                    <td>{document.date}</td>
-                    <td>{document.ownerName}</td>
-                    <td className="actions-cell">
-                      <button
-                        type="button"
-                        className="table-action-button"
-                        onClick={() => handleViewDocument(document)}
-                      >
-                        Visualiser
-                      </button>
-                      <button
-                        type="button"
-                        className="table-action-button danger"
-                        onClick={() => handleDeleteDocument(document.id)}
-                      >
-                        Supprimer
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7}>Aucune donnee pour ce type de document.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={TAB_CONFIG[activeTab].columns}
+          rows={filteredDocuments}
+          loading={loading}
+          sortConfig={sortConfig}
+          onSort={toggleSort}
+          onView={TAB_CONFIG[activeTab].showView ? handleViewDocument : undefined}
+          onDelete={handleDeleteDocument}
+          emptyMessage={TAB_CONFIG[activeTab].emptyMessage}
+        />
       )}
     </AppLayout>
   );

@@ -29,7 +29,7 @@ function AppLayout({ title, links, children }) {
           </button>
         </nav>
         <p className="workspace-user">
-          Connecte : {currentUser && currentUser.fullName ? currentUser.fullName : "Utilisateur"}
+          Connecte : {currentUser && currentUser.role}
         </p>
         {children}
       </section>

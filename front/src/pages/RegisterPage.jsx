@@ -6,7 +6,6 @@ import { register } from "../services/authApi";
 function RegisterPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    fullName: "",
     email: "",
     role: "user",
     password: "",
@@ -20,7 +19,6 @@ function RegisterPage() {
     const { name, value } = event.target;
     setForm((current) => {
       const updated = {
-        fullName: current.fullName,
         email: current.email,
         role: current.role,
         password: current.password,
@@ -36,7 +34,7 @@ function RegisterPage() {
     setError("");
     setSuccess("");
 
-    const { fullName, email, role, password, confirmPassword } = form;
+    const { email, role, password, confirmPassword } = form;
 
     if (password !== confirmPassword) {
       setError("Les mots de passe ne correspondent pas.");
@@ -45,10 +43,9 @@ function RegisterPage() {
 
     setLoading(true);
     try {
-      await register({ fullName, email, password, role });
+      await register({ email, password, role });
       setSuccess("Inscription reussie. Vous pouvez vous connecter.");
       setForm({
-        fullName: "",
         email: "",
         role: "user",
         password: "",
@@ -68,16 +65,6 @@ function RegisterPage() {
       subtitle="Cree un compte pour gerer vos documents."
       onSubmit={handleSubmit}
       fields={[
-        {
-          name: "fullName",
-          label: "Nom complet",
-          type: "text",
-          value: form.fullName,
-          placeholder: "Prenom Nom",
-          required: true,
-          minLength: 2,
-          onChange: handleChange
-        },
         {
           name: "email",
           label: "Email",
