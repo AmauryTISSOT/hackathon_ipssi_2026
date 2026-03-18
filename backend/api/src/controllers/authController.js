@@ -2,13 +2,13 @@ import * as authService from '../services/authService.js';
 
 export const register = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Email et mot de passe requis' });
     }
 
-    const result = await authService.register({ email, password });
+    const result = await authService.register({ email, password, role });
 
     res.status(201).json({
       message: 'Inscription réussie',
