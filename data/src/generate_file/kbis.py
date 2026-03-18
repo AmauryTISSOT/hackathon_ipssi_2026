@@ -11,7 +11,7 @@ import random
 import argparse
 import copy
 
-from data.utils import get_project_root, safe
+from data.utils import get_project_root, safe, get_mongodb_connection
 
 fake = Faker('fr_FR')
 ROOT_DIR = get_project_root()
@@ -20,21 +20,15 @@ load_dotenv(os.path.join(ROOT_DIR, ".env"))
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 DB_NAME = os.getenv("DB_NAME", "Hackathon")
 COLLECTION_NAME = "Company"
-
 BASE_PATH = os.path.join(ROOT_DIR, "data", "data_sirene")
 execution_date = datetime.now().strftime("%Y%m%d_%H%M%S")
 OUTPUT_DIR = os.path.join(ROOT_DIR, "data", "fake_data", "kbis_test", execution_date)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-def get_mongodb_connection():
-    client = MongoClient(MONGODB_URI)
-    db = client[DB_NAME]
-    collection = db[COLLECTION_NAME]
-    return client, collection
 
 def get_companies_from_mongodb(limit=None, sirets=None, filters=None, random_selection=False):
-    client, collection = get_mongodb_connection()
+    client, collection = get_mongodb_connection(MONGODB_URI, DB_NAME, COLLECTION_NAME)
     companies = []
     try:
         query = {}
@@ -56,7 +50,7 @@ def get_companies_from_mongodb(limit=None, sirets=None, filters=None, random_sel
 
 
 def get_company_by_siret(siret):
-    client, collection = get_mongodb_connection()
+    client, collection = get_mongodb_connection(MONGODB_URI, DB_NAME, COLLECTION_NAME)
     company = None
     try:
         company = collection.find_one({"siret": siret})
