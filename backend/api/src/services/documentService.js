@@ -1,7 +1,6 @@
 import axios from "axios";
 import minioClient from "../config/minio.js";
 import Document from "../models/Document.js";
-import crypto from "node:crypto";
 
 /** URL de l'API Airflow (hostname Docker en prod, localhost en dev) */
 const AIRFLOW_API_URL =
@@ -58,17 +57,14 @@ const airflowRequest = async (method, url, data) => {
  * @returns {Promise<{dag_run_id: string, doc_name: string}>} Identifiants du DAG run créé
  */
 export const uploadAndTrigger = async (file, userId) => {
-    // Generate unique filename with UUID prefix to prevent collisions
-    const uniqueName = `${crypto.randomUUID()}_${file.originalname}`;
-
     // Upload du document brut dans le bucket bronze (première couche du Data Lake)
-    await minioClient.putObject("bronze", uniqueName, file.buffer);
+    await minioClient.putObject("bronze", file.originalname, file.buffer);
 
     const response = await airflowRequest(
         "post",
         `${AIRFLOW_API_URL}/api/v2/dags/document_pipeline/dagRuns`,
         {
-            conf: { doc_name: uniqueName },
+            conf: { doc_name: file.originalname },
             logical_date: new Date().toISOString(),
         },
     );
@@ -78,7 +74,7 @@ export const uploadAndTrigger = async (file, userId) => {
     // On sauvegarde le document avec status "pending"
     // Airflow mettra à jour le status à "processed" une fois le pipeline terminé
     await Document.create({
-        filename: uniqueName,
+        filename: file.originalname,
         status: 'pending',
         user_id: userId,
         dag_run_id: dagRunId,
@@ -86,7 +82,7 @@ export const uploadAndTrigger = async (file, userId) => {
 
     return {
         dag_run_id: dagRunId,
-        doc_name: uniqueName,
+        doc_name: file.originalname,
     };
 };
 
