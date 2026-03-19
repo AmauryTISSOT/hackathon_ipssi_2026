@@ -1,4 +1,5 @@
 import { Quotation } from '../models/Quotation.js';
+import { removeMinioFiles } from '../services/documentService.js';
 
 export const createQuotation = async (req, res) => {
   try {
@@ -76,6 +77,9 @@ export const deleteQuotation = async (req, res) => {
     if (!quotation) {
       res.status(404).json({ error: 'quotation not found' });
       return;
+    }
+    if (quotation.source_filename) {
+      await removeMinioFiles(quotation.source_filename);
     }
     res.json({ message: 'quotation deleted successfully' });
   } catch (error) {

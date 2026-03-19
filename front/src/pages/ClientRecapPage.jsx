@@ -63,7 +63,8 @@ function ClientRecapPage() {
     let cancelled = false;
 
     const loadDocuments = async () => {
-      if (!currentUser) {
+      const user = getCurrentUser();
+      if (!user) {
         setDocuments([]);
         setLoading(false);
         setError("Session invalide. Merci de vous reconnecter.");
@@ -91,7 +92,7 @@ function ClientRecapPage() {
     return () => {
       cancelled = true;
     };
-  }, [currentUser]);
+  }, []);
 
   const sortedDocuments = useMemo(() => {
     return sortByConfig(documents, sortConfig);

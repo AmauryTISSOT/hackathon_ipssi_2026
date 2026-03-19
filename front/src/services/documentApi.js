@@ -1,6 +1,6 @@
 import { getAuthToken, getCurrentUser } from "./authApi";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "";
 const DOCUMENTS_KEY = "demo_documents";
 
 const seedDocuments = [
@@ -134,6 +134,11 @@ async function request(path, { method = "GET", body, token, isFormData = false }
     throw new Error(data.message);
   }
   return data;
+}
+
+export function getDocumentFileUrl(filename) {
+  const token = getAuthToken();
+  return `${API_URL}/api/documents/file/${encodeURIComponent(filename)}?token=${token}`;
 }
 
 export async function pollDocumentStatus(dagRunId) {
@@ -297,4 +302,9 @@ export async function deleteCertificate(id) {
 export async function deleteRib(id) {
   const token = getAuthToken();
   return request(`/api/ribs/${id}`, { method: "DELETE", token });
+}
+
+export async function deleteDocument(id) {
+  const token = getAuthToken();
+  return request(`/api/documents/${id}`, { method: "DELETE", token });
 }

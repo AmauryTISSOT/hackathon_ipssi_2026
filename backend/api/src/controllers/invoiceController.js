@@ -1,4 +1,5 @@
 import { Invoice } from '../models/Invoice.js';
+import { removeMinioFiles } from '../services/documentService.js';
 
 export const createInvoice = async (req, res) => {
   try {
@@ -82,6 +83,9 @@ export const deleteInvoice = async (req, res) => {
     if (!invoice) {
       res.status(404).json({ error: 'invoice not found' });
       return;
+    }
+    if (invoice.source_filename) {
+      await removeMinioFiles(invoice.source_filename);
     }
     res.json({ message: 'invoice deleted successfully' });
   } catch (error) {

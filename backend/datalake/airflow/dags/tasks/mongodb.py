@@ -35,7 +35,7 @@ def _ensure_date(value, default):
     return default
 
 
-def _save_facture(db, entities, company_id):
+def _save_facture(db, entities, company_id, doc_name=None):
     record = {
         "currency": entities.get("currency", "EUR"),
         "language": entities.get("language", "fr"),
@@ -46,6 +46,8 @@ def _save_facture(db, entities, company_id):
         "total_tax": entities.get("total_tax"),
         "total": entities.get("total"),
     }
+    if doc_name:
+        record["source_filename"] = doc_name
     if company_id:
         record["company_id"] = company_id
     db.invoices.update_one(
@@ -60,7 +62,7 @@ def _save_facture(db, entities, company_id):
     print("[MONGODB] Facture sauvegardée")
 
 
-def _save_devis(db, entities, company_id):
+def _save_devis(db, entities, company_id, doc_name=None):
     record = {
         "label": entities.get("label"),
         "quotation_lines": entities.get("quotation_lines", []),
@@ -72,6 +74,8 @@ def _save_devis(db, entities, company_id):
         "issue_date": _parse_date(entities.get("issue_date")),
         "due_date": _parse_date(entities.get("due_date")),
     }
+    if doc_name:
+        record["source_filename"] = doc_name
     if company_id:
         record["company_id"] = company_id
     db.quotations.update_one(
@@ -86,7 +90,7 @@ def _save_devis(db, entities, company_id):
     print("[MONGODB] Devis sauvegardé")
 
 
-def _save_kbis(db, entities, company_id):
+def _save_kbis(db, entities, company_id, doc_name=None):
     if not company_id:
         print("[MONGODB] KBIS: pas de company_id, skip (required field)")
         return False
@@ -125,6 +129,8 @@ def _save_kbis(db, entities, company_id):
         "information_relating_another_establishment_jurisdiction": other_est,
         "company_id": company_id,
     }
+    if doc_name:
+        record["source_filename"] = doc_name
     db.kbis.update_one(
         {"company_id": company_id},
         {"$set": record},
@@ -134,7 +140,7 @@ def _save_kbis(db, entities, company_id):
     return True
 
 
-def _save_attestation_urssaf(db, entities, company_id):
+def _save_attestation_urssaf(db, entities, company_id, doc_name=None):
     record = {
         "siren": entities.get("siren"),
         "siret": entities.get("siret"),
@@ -144,6 +150,8 @@ def _save_attestation_urssaf(db, entities, company_id):
         "created_at": _parse_date(entities.get("created_at")),
         "place_at": entities.get("place_at"),
     }
+    if doc_name:
+        record["source_filename"] = doc_name
     if company_id:
         record["company_id"] = company_id
     db.certificateemergencyurssafs.update_one(
@@ -157,7 +165,7 @@ def _save_attestation_urssaf(db, entities, company_id):
     print("[MONGODB] Attestation URSSAF sauvegardée")
 
 
-def _save_rib(db, entities, company_id):
+def _save_rib(db, entities, company_id, doc_name=None):
     record = {
         "iban": entities.get("iban"),
         "bic": entities.get("bic"),
@@ -167,6 +175,8 @@ def _save_rib(db, entities, company_id):
         "key": entities.get("key"),
         "registered_address": entities.get("registered_address"),
     }
+    if doc_name:
+        record["source_filename"] = doc_name
     if company_id:
         record["company_id"] = company_id
     db.ribs.update_one(
@@ -188,7 +198,7 @@ _SAVE_DISPATCH = {
 
 def save_to_mongodb(**context):
 
-    gold_data = context["ti"].xcom_pull(task_ids="validate_and_store_gold")
+    gold_data = context["ti"].xcom_pull(task_ids="perform_controls")
     doc_name = context["ti"].xcom_pull(task_ids="store_bronze")
     entities = gold_data["entities"]
     alerts = gold_data["validation"]["alerts"]
@@ -210,7 +220,7 @@ def save_to_mongodb(**context):
     dag_run_id = context["dag_run"].run_id
     doc_id = _upsert_and_get_id(db.documents, {"dag_run_id": dag_run_id}, doc_record)
 
-    # 2. Alerts
+    # 2. Alerts et Anomalies
     if alerts:
         alert_docs = [
             {
@@ -222,6 +232,20 @@ def save_to_mongodb(**context):
             for alert in alerts
         ]
         db.alerts.insert_many(alert_docs)
+        
+        # Enregistrer aussi dans la collection anomalies pour la gestion métier
+        anomaly_docs = [
+            {
+                "document_id": doc_id,
+                "anomaly_type": alert.get("type"),
+                "control": alert.get("control"),
+                "status": "pending",
+                "createdAt": datetime.utcnow(),
+                "updatedAt": datetime.utcnow(),
+            }
+            for alert in alerts
+        ]
+        db.anomalies.insert_many(anomaly_docs)
 
     # 3. Company
     siret_raw = entities.get("siret")
@@ -250,7 +274,7 @@ def save_to_mongodb(**context):
     # 4. Dispatch par type de document
     save_fn = _SAVE_DISPATCH.get(doc_type)
     if save_fn:
-        result = save_fn(db, entities, company_id)
+        result = save_fn(db, entities, company_id, doc_name=doc_name)
         if result is False:
             mongo_client.close()
             return

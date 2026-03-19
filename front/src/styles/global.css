@@ -438,3 +438,100 @@ th {
   }
 }
 
+/* Multi-upload status */
+.upload-status-multi {
+  margin-top: 1rem;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: var(--surface-color, #fafafa);
+}
+
+.upload-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.upload-status-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.upload-status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+}
+
+.upload-status-icon {
+  flex-shrink: 0;
+  width: 1.2em;
+  text-align: center;
+}
+
+.upload-status-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-status-label {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #666);
+}
+
+.upload-status-item.failed .upload-status-label,
+.upload-status-item.timeout .upload-status-label {
+  color: var(--error-color, #d32f2f);
+}
+
+.upload-status-item.success .upload-status-label {
+  color: var(--success-color, #388e3c);
+}
+
+/* Confirm modal */
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+}
+
+.confirm-modal {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px 28px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 16px 30px rgba(16, 33, 58, 0.18);
+}
+
+.confirm-modal h3 {
+  margin: 0 0 8px;
+}
+
+.confirm-modal p {
+  margin: 0 0 20px;
+  color: #4a5d79;
+  font-size: 0.94rem;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
