@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from data.utils import get_project_root, safe
+from utils import get_project_root, safe
 
 ROOT_DIR = get_project_root()
 

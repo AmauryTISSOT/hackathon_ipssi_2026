@@ -6,5 +6,7 @@ airflow/logs/
 node_modules/
 .DS_Store
 *.log
-pytest.ini
-.vite
+.venv
+fake_data/
+data/fake_data/
+data/data_sirene

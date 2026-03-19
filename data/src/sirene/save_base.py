@@ -9,14 +9,16 @@ from datetime import datetime
 import numpy as np
 from faker import Faker
 
-from data.utils import get_project_root, safe, clean_value, build_metadata, get_latest_parquet
+from utils import get_project_root, safe, clean_value, build_metadata, get_latest_parquet
 
 ROOT_DIR = get_project_root()
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DB_NAME = os.getenv("DB_NAME", "Hackathon")
-COLLECTION_NAME = "Company"
+MONGO_ROOT_USER= os.getenv("MONGO_ROOT_USER")
+MONGO_ROOT_PASSWORD = os.getenv("MONGO_ROOT_PASSWORD")
+DB_NAME = os.getenv("DB_NAME", "hackathon")
+COLLECTION_NAME = "companies"
 DATA_DIR = Path(os.path.join(ROOT_DIR, "data", "data_sirene", "formatted_data"))
 
 fake = Faker('fr_FR')
@@ -181,7 +183,7 @@ def main():
         if not parquet_file:
             print("Aucun fichier à traiter")
             return
-        client = MongoClient(MONGODB_URI)
+        client = MongoClient(MONGODB_URI, username=MONGO_ROOT_USER, password=MONGO_ROOT_PASSWORD)
         db = client[DB_NAME]
         company_collection = db[COLLECTION_NAME]
         print(f"Début de l'ingestion du fichier {os.path.basename(parquet_file)}")

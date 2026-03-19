@@ -7,7 +7,7 @@ import random
 
 from pymupdf import pymupdf
 
-from data.utils import get_project_root
+from utils import get_project_root
 
 
 ROOT_DIR = get_project_root()

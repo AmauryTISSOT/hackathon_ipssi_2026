@@ -5,7 +5,7 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 
-from data.utils import get_project_root
+from utils import get_project_root
 
 ROOT_DIR = get_project_root()
 
