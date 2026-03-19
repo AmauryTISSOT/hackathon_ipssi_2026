@@ -15,9 +15,12 @@ from utils import get_project_root, safe, convert, get_mongodb_connection
 ROOT_DIR = get_project_root()
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+_mongo_user = os.getenv("MONGO_ROOT_USER", "")
+_mongo_password = os.getenv("MONGO_ROOT_PASSWORD", "")
+_mongo_host = os.getenv("MONGODB_HOST", "localhost:27017")
+MONGODB_URI = f"mongodb://{_mongo_user}:{_mongo_password}@{_mongo_host}" if _mongo_user else f"mongodb://{_mongo_host}"
 DB_NAME = os.getenv("DB_NAME", "Hackathon")
-COLLECTION_NAME = "Company"
+COLLECTION_NAME = "companies"
 
 execution_date = datetime.now().strftime("%Y%m%d_%H%M%S")
 OUTPUT_DIR = os.path.join(ROOT_DIR, "data", "fake_data", "rib", execution_date)

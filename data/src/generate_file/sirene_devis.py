@@ -6,6 +6,8 @@ from datetime import date, timedelta
 from dotenv import load_dotenv
 from faker import Faker
 from pymongo import MongoClient
+
+from utils import get_project_root
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
@@ -35,11 +37,14 @@ SERVICES = [
 
 
 def load_sirene_companies() -> list[dict]:
-    load_dotenv()
-    uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-    db_name = os.getenv("DB_NAME", "Hackathon")
+    load_dotenv(os.path.join(get_project_root(), ".env"))
+    user = os.getenv("MONGO_ROOT_USER", "")
+    password = os.getenv("MONGO_ROOT_PASSWORD", "")
+    host = os.getenv("MONGODB_HOST", "localhost:27017")
+    uri = f"mongodb://{user}:{password}@{host}" if user else f"mongodb://{host}"
+    db_name = os.getenv("DB_NAME", "hackathon")
     client = MongoClient(uri)
-    companies = list(client[db_name]["Company"].find({"adresse_etablissement": {"$ne": None}}))
+    companies = list(client[db_name]["companies"].find({"adresse_etablissement": {"$ne": None}}))
     client.close()
     return companies
 
