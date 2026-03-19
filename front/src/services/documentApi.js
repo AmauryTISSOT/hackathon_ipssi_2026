@@ -136,6 +136,11 @@ async function request(path, { method = "GET", body, token, isFormData = false }
   return data;
 }
 
+export async function pollDocumentStatus(dagRunId) {
+  const token = getAuthToken();
+  return request(`/api/documents/status/${dagRunId}`, { token });
+}
+
 export async function createDocument({ file }) {
   const token = getAuthToken();
   const formData = new FormData();
