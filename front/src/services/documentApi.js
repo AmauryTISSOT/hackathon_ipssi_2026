@@ -162,7 +162,7 @@ export async function createDocument({ file }) {
     return {
       fileName: response.doc_name,
       dagRunId: response.dag_run_id,
-      status: "pending"
+      status: response.status || "pending",
     };
   } catch {
     const currentUser = getCurrentUser();
