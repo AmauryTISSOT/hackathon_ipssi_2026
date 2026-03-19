@@ -2,21 +2,7 @@ import re
 from datetime import datetime
 
 import os
-from pathlib import Path
-
 import requests
-from dotenv import load_dotenv
-
-
-def get_project_root():
-    current_path = Path(__file__).resolve()
-    for parent in current_path.parents:
-        if (parent / ".env").exists():
-            return parent
-    return current_path.parent
-
-ROOT_DIR = get_project_root()
-load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 
 def get_api_token():
@@ -31,7 +17,7 @@ def check_siret_with_api(siret):
     if not siret or len(siret) != 14 or not siret.isdigit():
         return False, None, f"SIRET invalide: {siret}"
 
-    token = "f1e11b9c-5988-4e11-a11b-9c59880e112f"
+    token = get_api_token()
     if not token:
         return False, None, "Token API Sirene manquant"
 
@@ -66,13 +52,6 @@ def check_siret_with_api(siret):
             return False, None, f"Erreur API Sirene: {response.status_code}"
     except Exception as e:
         return False, None, f"Exception lors de l'appel API: {str(e)}"
-
-
-def get_company_name_from_api(api_company):
-    if not api_company:
-        return None
-    return (api_company.get("denomination") or
-            f"{api_company.get('prenom', '')} {api_company.get('nom', '')}".strip())
 
 
 def validate_iban(iban):
@@ -262,7 +241,8 @@ def validate_siren_siret(siret, siren=None):
             "severity": "error",
             "control": "sirene_validation"
         })
-        print(f"[CONTROLS] Erreur: {api_message or f"SIRET {siret} invalide selon API Sirene"}")
+        erreur = api_message or f"SIRET {siret} invalide selon API Sirene"
+        print(f"[CONTROLS] Erreur: {erreur}")
 
     return is_valid, company_data, alerts
 
