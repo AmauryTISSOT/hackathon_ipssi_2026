@@ -21,6 +21,15 @@ export const uploadDocument = async (req, res) => {
 export const getDocumentStatus = async (req, res) => {
     try {
         const status = await getDagRunStatus(req.params.dagRunId);
+
+        // Synchronise le statut MongoDB quand Airflow termine (succès ou échec)
+        if (status.state === "failed") {
+            await Document.findOneAndUpdate(
+                { dag_run_id: req.params.dagRunId },
+                { status: "failed" },
+            );
+        }
+
         res.status(200).json(status);
     } catch (error) {
         res.status(500).json({ message: error.message });
