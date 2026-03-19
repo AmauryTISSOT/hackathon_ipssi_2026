@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AppLayout from "../components/AppLayout";
 import DataTable from "../components/DataTable";
+import ConfirmModal from "../components/ConfirmModal";
 import {
   listInvoices,
   listQuotations,
@@ -242,6 +243,7 @@ function ComptableRecapPage() {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -372,7 +374,7 @@ function ComptableRecapPage() {
             sortConfig={sortConfig}
             onSort={toggleSort}
             onView={handleViewDocument}
-            onDelete={handleDeleteDocument}
+            onDelete={(id) => setPendingDeleteId(id)}
             emptyMessage="Aucun document pour ce filtre."
           />
         </>
@@ -384,10 +386,20 @@ function ComptableRecapPage() {
           sortConfig={sortConfig}
           onSort={toggleSort}
           onView={TAB_CONFIG[activeTab].showView ? handleViewDocument : undefined}
-          onDelete={handleDeleteDocument}
+          onDelete={(id) => setPendingDeleteId(id)}
           emptyMessage={TAB_CONFIG[activeTab].emptyMessage}
         />
       )}
+      <ConfirmModal
+        open={pendingDeleteId != null}
+        title="Confirmer la suppression"
+        message="Voulez-vous vraiment supprimer ce document ? Cette action est irreversible."
+        onConfirm={() => {
+          handleDeleteDocument(pendingDeleteId);
+          setPendingDeleteId(null);
+        }}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </AppLayout>
   );
 }
