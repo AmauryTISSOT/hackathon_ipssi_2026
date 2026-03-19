@@ -15,8 +15,13 @@ export const register = async ({ email, password, role }) => {
   if (existingUser) throw new Error('Email déjà utilisé');
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  // Le rôle peut être passé à la création, sinon il prend la valeur par défaut 'user'
-  const user = await User.create({ email, password: hashedPassword, role });
+  
+  const userData = { email, password: hashedPassword };
+  if (role) {
+    userData.role = role;
+  }
+  
+  const user = await User.create(userData);
 
   const token = generateToken(user._id);
 
