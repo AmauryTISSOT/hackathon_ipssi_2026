@@ -1,23 +1,28 @@
 import mongoose from 'mongoose';
+import logger from './logger.js';
 
 export const connectDatabase = async () => {
   try {
     const mongoUri = process.env.MONGODB_URI;
-    
+
     await mongoose.connect(mongoUri);
-    
-    console.log('mongodb connected successfully');
-    
+
+    logger.info('mongodb connected successfully');
+
+    mongoose.set('debug', (coll, method, query, doc) => {
+      logger.info({ coll, method, query, doc }, 'mongoose query');
+    });
+
     mongoose.connection.on('error', (err) => {
-      console.error('mongodb connection error:', err);
+      logger.error(err, 'mongodb connection error');
     });
-    
+
     mongoose.connection.on('disconnected', () => {
-      console.warn('mongodb disconnected');
+      logger.warn('mongodb disconnected');
     });
-    
+
   } catch (error) {
-    console.error('mongodb connection failed:', error);
+    logger.error(error, 'mongodb connection failed');
     process.exit(1);
   }
 };
