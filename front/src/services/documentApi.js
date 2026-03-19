@@ -279,6 +279,16 @@ export async function listFailedDocuments() {
   return (response.documents || []).filter((d) => d.status === "failed");
 }
 
+export async function listAnomalies() {
+  const token = getAuthToken();
+  return request("/api/anomalies", { token });
+}
+
+export async function deleteAnomaly(id) {
+  const token = getAuthToken();
+  return request(`/api/anomalies/${id}`, { method: "DELETE", token });
+}
+
 export async function deleteInvoice(id) {
   const token = getAuthToken();
   return request(`/api/invoices/${id}`, { method: "DELETE", token });

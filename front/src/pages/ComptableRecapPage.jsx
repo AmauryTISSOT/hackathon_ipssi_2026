@@ -8,7 +8,7 @@ import {
   listKbis,
   listCertificates,
   listRibs,
-  listFailedDocuments,
+  listAnomalies,
   listAllDocuments,
   listFolders,
   deleteInvoice,
@@ -16,7 +16,7 @@ import {
   deleteKbis,
   deleteCertificate,
   deleteRib,
-  deleteDocument,
+  deleteAnomaly,
   getDocumentFileUrl,
 } from "../services/documentApi";
 
@@ -105,11 +105,33 @@ function normalizeRib(doc) {
   };
 }
 
-function normalizeFailedDoc(doc) {
+const ANOMALY_TYPE_LABELS = {
+  iban_invalid: "IBAN invalide",
+  tva_number_invalid: "Numéro TVA invalide",
+  tva_mismatch: "TVA incorrecte",
+  line_price_mismatch: "Prix ligne incorrect",
+  siret_invalid: "SIRET invalide",
+  siret_format: "Format SIRET invalide",
+  invoice_dates_invalid: "Dates facture invalides",
+  date_future: "Date dans le futur",
+  missing_amounts: "Montants manquants",
+};
+
+const ANOMALY_STATUS_LABELS = {
+  pending: "En attente",
+  resolved: "Résolu",
+  ignored: "Ignoré",
+};
+
+function normalizeAnomaly(doc) {
   return {
     id: doc._id,
-    fileName: doc.filename ?? "-",
-    date: doc.createdAt ? doc.createdAt.slice(0, 10) : "-",
+    fileName: doc.document_id?.filename ?? "-",
+    problem: ANOMALY_TYPE_LABELS[doc.anomaly_type] ?? doc.anomaly_type ?? "-",
+    anomalyStatus: ANOMALY_STATUS_LABELS[doc.status] ?? doc.status ?? "-",
+    resolvedBy: doc.resolved_by?.email ?? "-",
+    resolvedAt: doc.resolved_at ? doc.resolved_at.slice(0, 10) : "-",
+    note: doc.resolution_note ?? "-",
   };
 }
 
@@ -182,15 +204,19 @@ const TAB_CONFIG = {
     emptyMessage: "Aucune attestation URSSAF trouvee.",
   },
   "Document non conforme": {
-    fetch: listFailedDocuments,
-    delete: deleteDocument,
-    normalize: normalizeFailedDoc,
+    fetch: listAnomalies,
+    delete: deleteAnomaly,
+    normalize: normalizeAnomaly,
     columns: [
-      { key: "fileName", label: "Nom document", sortable: true },
-      { key: "date", label: "Date", sortable: true },
+      { key: "fileName", label: "Nom du document", sortable: true },
+      { key: "problem", label: "Problème", sortable: true },
+      { key: "anomalyStatus", label: "Statut anomalie", sortable: true },
+      { key: "resolvedBy", label: "Résolu par" },
+      { key: "resolvedAt", label: "Résolu à", sortable: true },
+      { key: "note", label: "Note" },
     ],
     showView: false,
-    emptyMessage: "Aucun document non conforme.",
+    emptyMessage: "Aucune anomalie détectée.",
   },
   "RIB": {
     fetch: listRibs,

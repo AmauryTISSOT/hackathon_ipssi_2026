@@ -211,7 +211,7 @@ def save_to_mongodb(**context):
     doc_record = {
         "filename": doc_name,
         "doc_type": doc_type,
-        "status": "processed",
+        "status": "failed" if alerts else "processed",
         "bronze_path": f"bronze/{doc_name}",
         "silver_path": f"silver/silver_{doc_name.rsplit('.', 1)[0]}.json",
         "gold_path": f"gold/gold_{doc_name.rsplit('.', 1)[0]}.json",
