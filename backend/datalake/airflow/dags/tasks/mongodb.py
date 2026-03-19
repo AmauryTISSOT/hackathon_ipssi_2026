@@ -188,7 +188,7 @@ _SAVE_DISPATCH = {
 
 def save_to_mongodb(**context):
 
-    gold_data = context["ti"].xcom_pull(task_ids="validate_and_store_gold")
+    gold_data = context["ti"].xcom_pull(task_ids="perform_controls")
     doc_name = context["ti"].xcom_pull(task_ids="store_bronze")
     entities = gold_data["entities"]
     alerts = gold_data["validation"]["alerts"]
@@ -210,7 +210,7 @@ def save_to_mongodb(**context):
     dag_run_id = context["dag_run"].run_id
     doc_id = _upsert_and_get_id(db.documents, {"dag_run_id": dag_run_id}, doc_record)
 
-    # 2. Alerts
+    # 2. Alerts et Anomalies
     if alerts:
         alert_docs = [
             {
@@ -222,6 +222,20 @@ def save_to_mongodb(**context):
             for alert in alerts
         ]
         db.alerts.insert_many(alert_docs)
+        
+        # Enregistrer aussi dans la collection anomalies pour la gestion métier
+        anomaly_docs = [
+            {
+                "document_id": doc_id,
+                "anomaly_type": alert.get("type"),
+                "control": alert.get("control"),
+                "status": "pending",
+                "createdAt": datetime.utcnow(),
+                "updatedAt": datetime.utcnow(),
+            }
+            for alert in alerts
+        ]
+        db.anomalies.insert_many(anomaly_docs)
 
     # 3. Company
     siret_raw = entities.get("siret")
