@@ -1,4 +1,6 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
+import { pollDocumentStatus } from "../services/documentApi";
+import UploadStatusBanner from "./UploadStatusBanner";
 
 function UploadPanel({ onSubmit }) {
   const fileInputRef = useRef(null);
@@ -6,6 +8,33 @@ function UploadPanel({ onSubmit }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [polling, setPolling] = useState(null);
+
+  const stopPolling = useCallback(() => {
+    setPolling(null);
+  }, []);
+
+  useEffect(() => {
+    if (!polling) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const result = await pollDocumentStatus(polling.dagRunId);
+        if (result.state === "success") {
+          setSuccess(`Document "${polling.fileName}" traité avec succès.`);
+          stopPolling();
+        } else if (result.state === "failed") {
+          setError(`Le traitement de "${polling.fileName}" a échoué.`);
+          setSuccess("");
+          stopPolling();
+        }
+      } catch {
+        // keep polling
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [polling, stopPolling]);
 
   const handleUpload = async (file) => {
     if (!file) return;
@@ -16,6 +45,9 @@ function UploadPanel({ onSubmit }) {
     try {
       const created = await onSubmit({ file });
       setSuccess(`Document "${created.fileName}" déposé avec succès. Analyse en cours...`);
+      if (created.dagRunId) {
+        setPolling({ dagRunId: created.dagRunId, fileName: created.fileName });
+      }
     } catch {
       setError("Echec de l'envoi du document.");
     }
@@ -86,8 +118,12 @@ function UploadPanel({ onSubmit }) {
           <small>Glisser/deposer ou cliquer pour ouvrir l'explorateur.</small>
         </div>
       </div>
-      {error ? <p className="message error">{error}</p> : null}
-      {success ? <p className="message success">{success}</p> : null}
+      <UploadStatusBanner
+        polling={polling}
+        success={success}
+        error={error}
+        onDismiss={() => { setSuccess(""); setError(""); }}
+      />
     </section>
   );
 }

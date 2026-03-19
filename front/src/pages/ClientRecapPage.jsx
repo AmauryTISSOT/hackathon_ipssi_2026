@@ -30,7 +30,7 @@ function sortByConfig(items, sortConfig) {
 const STATUS_LABELS = {
   pending: "En cours",
   processed: "Traite",
-  failed: "Non conforme"
+  failed: "Échec"
 };
 
 // Correspondance entre doc_type renvoyé par Airflow et labels lisibles
@@ -46,7 +46,7 @@ function normalizeDocument(document) {
   return {
     id: document._id,
     fileName: document.filename,
-    docType: DOC_TYPE_LABELS[document.doc_type] ?? document.doc_type ?? "En attente",
+    docType: DOC_TYPE_LABELS[document.doc_type] ?? document.doc_type ?? (document.status === "failed" ? "-" : "En attente"),
     status: STATUS_LABELS[document.status] ?? document.status,
     date: document.createdAt ? document.createdAt.slice(0, 10) : "-"
   };
