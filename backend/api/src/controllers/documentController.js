@@ -3,6 +3,7 @@ import {
     uploadAndTrigger,
     getDagRunStatus,
     getFileFromBronze,
+    deleteDocument as deleteDocumentService,
 } from "../services/documentService.js";
 import Document from "../models/Document.js";
 
@@ -68,6 +69,18 @@ export const getDocumentFile = async (req, res) => {
         if (error.code === "NoSuchKey" || error.message?.includes("Not Found")) {
             return res.status(404).json({ message: "Fichier introuvable dans MinIO" });
         }
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const deleteDocument = async (req, res) => {
+    try {
+        const doc = await deleteDocumentService(req.params.id);
+        if (!doc) {
+            return res.status(404).json({ message: "Document introuvable" });
+        }
+        res.json({ message: "document deleted successfully" });
+    } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };

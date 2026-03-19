@@ -1,4 +1,5 @@
 import { RIB } from '../models/RIB.js';
+import { removeMinioFiles } from '../services/documentService.js';
 
 export const createRIB = async (req, res) => {
   try {
@@ -87,6 +88,9 @@ export const deleteRIB = async (req, res) => {
     if (!rib) {
       res.status(404).json({ error: 'rib not found' });
       return;
+    }
+    if (rib.source_filename) {
+      await removeMinioFiles(rib.source_filename);
     }
     res.json({ message: 'rib deleted successfully' });
   } catch (error) {

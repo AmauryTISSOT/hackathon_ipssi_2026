@@ -15,6 +15,7 @@ import {
   deleteKbis,
   deleteCertificate,
   deleteRib,
+  deleteDocument,
   getDocumentFileUrl,
 } from "../services/documentApi";
 
@@ -181,6 +182,7 @@ const TAB_CONFIG = {
   },
   "Document non conforme": {
     fetch: listFailedDocuments,
+    delete: deleteDocument,
     normalize: normalizeFailedDoc,
     columns: [
       { key: "fileName", label: "Nom document", sortable: true },

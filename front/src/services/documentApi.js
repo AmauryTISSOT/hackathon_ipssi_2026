@@ -303,3 +303,8 @@ export async function deleteRib(id) {
   const token = getAuthToken();
   return request(`/api/ribs/${id}`, { method: "DELETE", token });
 }
+
+export async function deleteDocument(id) {
+  const token = getAuthToken();
+  return request(`/api/documents/${id}`, { method: "DELETE", token });
+}

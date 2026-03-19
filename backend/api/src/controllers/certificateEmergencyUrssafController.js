@@ -1,4 +1,5 @@
 import { CertificateEmergencyUrssaf } from '../models/CertificationEmergencyUrssaf.js';
+import { removeMinioFiles } from '../services/documentService.js';
 
 export const createCertificateEmergencyUrssaf = async (req, res) => {
   try {
@@ -123,6 +124,9 @@ export const deleteCertificateEmergencyUrssaf = async (req, res) => {
     if (!certificate) {
       res.status(404).json({ error: 'certificate emergency urssaf not found' });
       return;
+    }
+    if (certificate.source_filename) {
+      await removeMinioFiles(certificate.source_filename);
     }
     res.json({ message: 'certificate emergency urssaf deleted successfully' });
   } catch (error) {

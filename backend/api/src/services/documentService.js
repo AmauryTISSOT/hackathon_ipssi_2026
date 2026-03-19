@@ -101,6 +101,27 @@ export const getFileFromBronze = async (filename) => {
     return minioClient.getObject("bronze", filename);
 };
 
+export const removeMinioFiles = async (filename) => {
+    const dotIndex = filename.lastIndexOf('.');
+    const baseName = dotIndex > 0 ? filename.substring(0, dotIndex) : filename;
+
+    await Promise.allSettled([
+        minioClient.removeObject("bronze", filename),
+        minioClient.removeObject("silver", `silver_${baseName}.json`),
+        minioClient.removeObject("gold", `gold_${baseName}.json`),
+    ]);
+};
+
+export const deleteDocument = async (docId) => {
+    const doc = await Document.findById(docId);
+    if (!doc) return null;
+
+    await removeMinioFiles(doc.filename);
+    await Document.findByIdAndDelete(docId);
+
+    return doc;
+};
+
 export const getDagRunStatus = async (dagRunId) => {
     const response = await airflowRequest(
         "get",

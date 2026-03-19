@@ -6,6 +6,7 @@ import {
     getDocumentStatus,
     getDocumentFile,
     getHistory,
+    deleteDocument,
 } from "../controllers/documentController.js";
 
 const router = Router();
@@ -40,5 +41,7 @@ router.get("/history", protect, getHistory);
  * Supporte le token JWT via query param (?token=xxx) pour window.open().
  */
 router.get("/file/:filename", protect, getDocumentFile);
+
+router.delete("/:id", protect, deleteDocument);
 
 export default router;
