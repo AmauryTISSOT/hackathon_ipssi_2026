@@ -63,3 +63,13 @@ AZURE_DI_KEY=<clé-api>
 ```bash
 docker compose up -d
 ```
+
+## Accès
+
+| Service | URL |
+|---------|-----|
+| Application (frontend) | [http://localhost](http://localhost) |
+| API backend | [http://localhost:3000](http://localhost:3000) |
+| MinIO Console | [http://localhost:9001](http://localhost:9001) |
+| Airflow UI | [http://localhost:8080](http://localhost:8080) |
+| Mongo Express | [http://localhost:8081](http://localhost:8081) |
