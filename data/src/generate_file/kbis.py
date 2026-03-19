@@ -8,7 +8,7 @@ from reportlab.lib.utils import simpleSplit
 from pathlib import Path
 from datetime import datetime
 
-from utils import get_project_root
+from data.utils import get_project_root, safe
 
 fake = Faker('fr_FR')
 
@@ -23,11 +23,11 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
 def get_denomination_or_name(etab_data):
-    categorie_juridique = etab_data.get('categorieJuridiqueUniteLegale', '')
+    categorie_juridique = safe(etab_data.get('categorieJuridiqueUniteLegale', ''))
     if categorie_juridique == '1000':
-        nom = etab_data.get('nomUniteLegale', '')
-        prenom = etab_data.get('prenom1UniteLegale', '')
-        prenom_usuel = etab_data.get('prenomUsuelUniteLegale', '')
+        nom = safe(etab_data.get('nomUniteLegale', ''))
+        prenom = safe(etab_data.get('prenom1UniteLegale', ''))
+        prenom_usuel = safe(etab_data.get('prenomUsuelUniteLegale', ''))
 
         if nom and prenom:
             if prenom_usuel and prenom_usuel != prenom:
@@ -40,7 +40,7 @@ def get_denomination_or_name(etab_data):
         else:
             return f"{fake.last_name().upper()} {fake.first_name()}"
     else:
-        denomination = etab_data.get('denominationUniteLegale')
+        denomination = safe(etab_data.get('denominationUniteLegale'))
         if denomination:
             return denomination
         else:
@@ -48,9 +48,9 @@ def get_denomination_or_name(etab_data):
 
 
 def format_siret_rcs(etab_data):
-    siren = etab_data.get('siren', '')
-    siret = etab_data.get('siret', '')
-    ville = etab_data.get('libelleCommuneEtablissement', '')
+    siren = safe(etab_data.get('siren', ''))
+    siret = safe(etab_data.get('siret', ''))
+    ville = safe(etab_data.get('libelleCommuneEtablissement', ''))
     if not ville:
         ville = fake.city()
     return {
@@ -59,7 +59,7 @@ def format_siret_rcs(etab_data):
     }
 
 def get_forme_juridique(etab_data):
-    categorie = etab_data.get('categorieJuridiqueUniteLegale', '')
+    categorie = safe(etab_data.get('categorieJuridiqueUniteLegale', ''))
     mapping_categories = {
         '1000': 'Entrepreneur individuel',
         '5710': 'SAS, société par actions simplifiée',
@@ -74,13 +74,13 @@ def get_forme_juridique(etab_data):
 
 
 def get_adresse_complete(etab_data):
-    adresse = etab_data.get('adresseEtablissement', '')
-    complement = etab_data.get('complementAdresseEtablissement', '')
-    numero = etab_data.get('numeroVoieEtablissement', '')
-    type_voie = etab_data.get('typeVoieEtablissement', '')
-    libelle_voie = etab_data.get('libelleVoieEtablissement', '')
-    code_postal = etab_data.get('codePostalEtablissement', '')
-    commune = etab_data.get('libelleCommuneEtablissement', '')
+    adresse = safe(etab_data.get('adresseEtablissement', ''))
+    complement = safe(etab_data.get('complementAdresseEtablissement', ''))
+    numero = safe(etab_data.get('numeroVoieEtablissement', ''))
+    type_voie = safe(etab_data.get('typeVoieEtablissement', ''))
+    libelle_voie = safe(etab_data.get('libelleVoieEtablissement', ''))
+    code_postal = safe(etab_data.get('codePostalEtablissement', ''))
+    commune = safe(etab_data.get('libelleCommuneEtablissement', ''))
 
     if adresse and adresse != 'None':
         return adresse
@@ -109,14 +109,14 @@ def get_adresse_complete(etab_data):
 
 
 def generate_gerant_info(etab_data):
-    categorie = etab_data.get('categorieJuridiqueUniteLegale', '')
+    categorie = safe(etab_data.get('categorieJuridiqueUniteLegale', ''))
 
     role = fake.random_element(elements=('Président', 'Directeur Général', 'Gérant', 'Associé unique'))
 
-    if categorie == '1000' and etab_data.get('nomUniteLegale'):
-        nom = etab_data.get('nomUniteLegale', '').upper()
-        prenom = etab_data.get('prenom1UniteLegale', '')
-        prenom_usuel = etab_data.get('prenomUsuelUniteLegale', '')
+    if categorie == '1000' and safe(etab_data.get('nomUniteLegale')):
+        nom = safe(etab_data.get('nomUniteLegale', '').upper())
+        prenom = safe(etab_data.get('prenom1UniteLegale', ''))
+        prenom_usuel = safe(etab_data.get('prenomUsuelUniteLegale', ''))
         if prenom_usuel and prenom_usuel != prenom:
             prenom_aff = f"{prenom_usuel} ({prenom})"
         else:
@@ -137,12 +137,12 @@ def generate_gerant_info(etab_data):
         'prenom': firstname,
         'naissance': f"Le {birth} à {birth_place}",
         'nationalite': "FRANCAIS",
-        'domicile': fake.address().replace('\n', ', ')
+        'domicile': get_adresse_complete(etab_data)
     }
 
 
 def create_siege_social_if_needed(etab_data):
-    est_siege = etab_data.get('etablissementSiege', False)
+    est_siege = safe(etab_data.get('etablissementSiege', False))
 
     if not est_siege:
         siege_data = etab_data.copy()
@@ -160,7 +160,7 @@ def draw_header(c, width, margin, y, num_gestion):
     c.setFont('Helvetica', 9)
     greffe_lignes = [
         f"Greffe du tribunal de commerce de {fake.city()}",
-        fake.address().replace('\n', ', ')[:40],
+        fake.address().replace('\n', ', '),
         f"N° de gestion : {num_gestion}"
     ]
     x_left = margin
@@ -251,7 +251,7 @@ def generate_kbis_pdf(etab_data, output_path):
     capital = fake.random_int(min=1000, max=50000)
     y -= draw_field_row(c, y, "Capital social", f"{capital} €", x_label, x_value, max_width)
     y -= draw_field_row(c, y, "Adresse du siège", adresse, x_label, x_value, max_width)
-    activite = etab_a_utiliser.get('activitePrincipaleUniteLegale', 'Non renseignée')
+    activite = safe(etab_a_utiliser.get('activitePrincipaleUniteLegale', 'Non renseignée'))
     y -= draw_field_row(c, y, "Code NAF / APE", activite, x_label, x_value, max_width)
     expiry = fake.date_between(start_date='+50y', end_date='+99y').strftime('%d/%m/%Y')
     y -= draw_field_row(c, y, "Durée de la société", f"Jusqu'au {expiry}", x_label, x_value, max_width)
@@ -269,8 +269,8 @@ def generate_kbis_pdf(etab_data, output_path):
     y -= draw_field_row(c, y, "Adresse établissement", adresse, x_label, x_value, max_width)
     activite_exercee = fake.catch_phrase()
     y -= draw_field_row(c, y, "Activité exercée ", activite_exercee, x_label, x_value, max_width)
-    date_creation = etab_a_utiliser.get('dateCreationEtablissement', '')
-    if not date_creation or date_creation == '2000-01-01':
+    date_creation = safe(safe(etab_a_utiliser.get('dateCreationUniteLegale', '')))
+    if not date_creation or date_creation == '':
         date_creation = fake.date_between(start_date='-10y', end_date='-1y').strftime('%Y-%m-%d')
     try:
         date_creation_formatee = datetime.strptime(date_creation, '%Y-%m-%d').strftime('%d/%m/%Y')
@@ -288,7 +288,7 @@ def generate_kbis_pdf(etab_data, output_path):
     c.drawCentredString(width / 2, footer_y, footer_text)
 
     c.save()
-    print(f"✅ Kbis généré pour {denomination} (SIREN: {etab_a_utiliser.get('siren', 'N/A')})")
+    print(f"✅ Kbis généré pour {denomination} (SIREN: {safe(etab_a_utiliser.get('siren', 'N/A'))}")
 
 
 def run_kbis_generation():
@@ -309,9 +309,7 @@ def run_kbis_generation():
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    df_silver = df_silver[df_silver['etatAdministratifUniteLegale'] == 'C']
-
-    limit = min(10, len(df_silver))
+    limit = min(100, len(df_silver))
     print(f"Génération de {limit} fichiers Kbis...")
 
     for index, row in df_silver.head(limit).iterrows():
@@ -320,7 +318,7 @@ def run_kbis_generation():
         if 'metadata' in etab_data and isinstance(etab_data['metadata'], dict):
             etab_data.update(etab_data['metadata'])
 
-        siren = etab_data.get('siren', fake.numerify('#########'))
+        siren = safe(etab_data.get('siren', fake.numerify('#########')))
         filename = f"kbis_{siren}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
 
         generate_kbis_pdf(etab_data, os.path.join(OUTPUT_DIR, filename))

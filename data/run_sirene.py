@@ -1,5 +1,5 @@
-from src.sirene.request_and_save_raw import fetch_sirene_data, save_to_bronze
-from src.sirene.format_raw import extract_essential_fields, save_to_silver
+from data.src.sirene.request_and_save_raw import fetch_sirene_data, save_to_bronze
+from data.src.sirene.format_raw import extract_essential_fields, save_to_silver
 def main():
     print("=== Démarrage du test du Pipeline SIRENE ===")
 
