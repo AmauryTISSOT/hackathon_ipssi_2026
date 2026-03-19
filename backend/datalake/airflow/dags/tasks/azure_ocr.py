@@ -113,9 +113,9 @@ def classify_by_keywords(text):
 def _extract_invoice_lines(fields, taux_tva):
     """Extrait les lignes de facture depuis les champs Azure Items."""
     lines = []
-    if "Items" not in fields or fields["Items"].value_list is None:
+    if "Items" not in fields or fields["Items"].value_array is None:
         return lines
-    for item in fields["Items"].value_list:
+    for item in fields["Items"].value_array:
         obj = item.value_object or {}
         label = obj.get("Description")
         label = label.value_string if label else None
