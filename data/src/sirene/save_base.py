@@ -9,7 +9,7 @@ from datetime import datetime
 import numpy as np
 from faker import Faker
 
-from data.utils import get_project_root, safe, clean_value, build_metadata, get_latest_parquet
+from utils import get_project_root, safe, clean_value, build_metadata, get_latest_parquet
 
 ROOT_DIR = get_project_root()
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
