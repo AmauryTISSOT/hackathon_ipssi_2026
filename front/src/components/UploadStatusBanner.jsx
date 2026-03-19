@@ -1,25 +1,56 @@
-/**
- * Bandeau de statut affiché après un upload de document.
- * Trois états : pending (analyse en cours), success, error.
- * Le bouton dismiss n'apparaît qu'une fois le traitement terminé.
- */
-function UploadStatusBanner({ polling, success, error, onDismiss }) {
-  if (!error && !success && !polling) return null;
+const STATUS_LABELS = {
+  pending: "En attente",
+  uploading: "Envoi…",
+  polling: "Analyse en cours…",
+  success: "Traité",
+  failed: "Échoué",
+  timeout: "Délai dépassé",
+};
+
+const STATUS_ICONS = {
+  pending: "⏳",
+  uploading: "⬆️",
+  polling: "🔄",
+  success: "✅",
+  failed: "❌",
+  timeout: "⏱️",
+};
+
+function UploadStatusBanner({ files, onDismiss }) {
+  if (!files || files.length === 0) return null;
+
+  const completed = files.filter(
+    (f) => f.status === "success" || f.status === "failed" || f.status === "timeout"
+  );
+  const allDone = completed.length === files.length;
 
   return (
-    <div className={`upload-status ${error ? "error" : polling ? "pending" : "success"}`}>
-      <span className="upload-status-text">
-        {polling && <><strong>{polling.fileName}</strong> — Analyse en cours…</>}
-        {!polling && success && <>{success}</>}
-        {!polling && error && <>{error}</>}
-      </span>
-      {!polling && (
-        <button
-          className="upload-status-dismiss"
-          onClick={onDismiss}
-          aria-label="Fermer"
-        >×</button>
-      )}
+    <div className="upload-status-multi">
+      <div className="upload-status-header">
+        <span>
+          {completed.length}/{files.length} terminé{completed.length > 1 ? "s" : ""}
+        </span>
+        {allDone && (
+          <button
+            className="upload-status-dismiss"
+            onClick={onDismiss}
+            aria-label="Fermer"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      <ul className="upload-status-list">
+        {files.map((f) => (
+          <li key={f.id} className={`upload-status-item ${f.status}`}>
+            <span className="upload-status-icon">{STATUS_ICONS[f.status]}</span>
+            <span className="upload-status-name">{f.fileName}</span>
+            <span className="upload-status-label">
+              {f.error || STATUS_LABELS[f.status]}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

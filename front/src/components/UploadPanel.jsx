@@ -2,70 +2,183 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { pollDocumentStatus } from "../services/documentApi";
 import UploadStatusBanner from "./UploadStatusBanner";
 
+const MAX_FILES = 10;
+const MAX_CONCURRENT = 3;
+const POLL_INTERVAL = 3000;
+const POLL_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+const ACCEPTED_TYPES = [
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+];
+
 function UploadPanel({ onSubmit }) {
   const fileInputRef = useRef(null);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const pollingRef = useRef({}); // { [fileId]: intervalId }
+  const pollStartRef = useRef({}); // { [fileId]: timestamp }
+  const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [polling, setPolling] = useState(null);
+  const [validationError, setValidationError] = useState("");
 
-  const stopPolling = useCallback(() => {
-    setPolling(null);
+  // Cleanup all intervals on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(pollingRef.current).forEach(clearInterval);
+    };
   }, []);
 
+  // Navigation guard
   useEffect(() => {
-    if (!polling) return;
+    const hasActive = files.some(
+      (f) => f.status === "uploading" || f.status === "polling"
+    );
+    if (!hasActive) return;
 
-    const interval = setInterval(async () => {
-      try {
-        const result = await pollDocumentStatus(polling.dagRunId);
-        if (result.state === "success") {
-          setSuccess(`Document "${polling.fileName}" traité avec succès.`);
-          stopPolling();
-        } else if (result.state === "failed") {
-          setError(`Le traitement de "${polling.fileName}" a échoué.`);
-          setSuccess("");
-          stopPolling();
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [files]);
+
+  const updateFile = useCallback((id, updates) => {
+    setFiles((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, ...updates } : f))
+    );
+  }, []);
+
+  const startPolling = useCallback(
+    (fileId, dagRunId) => {
+      if (pollingRef.current[fileId]) return;
+      pollStartRef.current[fileId] = Date.now();
+
+      const intervalId = setInterval(async () => {
+        if (Date.now() - pollStartRef.current[fileId] > POLL_TIMEOUT) {
+          clearInterval(pollingRef.current[fileId]);
+          delete pollingRef.current[fileId];
+          delete pollStartRef.current[fileId];
+          updateFile(fileId, { status: "timeout" });
+          return;
         }
-      } catch {
-        // keep polling
-      }
-    }, 3000);
 
-    return () => clearInterval(interval);
-  }, [polling, stopPolling]);
+        try {
+          const result = await pollDocumentStatus(dagRunId);
+          if (result.state === "success") {
+            clearInterval(pollingRef.current[fileId]);
+            delete pollingRef.current[fileId];
+            delete pollStartRef.current[fileId];
+            updateFile(fileId, { status: "success" });
+          } else if (result.state === "failed") {
+            clearInterval(pollingRef.current[fileId]);
+            delete pollingRef.current[fileId];
+            delete pollStartRef.current[fileId];
+            updateFile(fileId, {
+              status: "failed",
+              error: "Le traitement a échoué.",
+            });
+          }
+        } catch {
+          // keep polling
+        }
+      }, POLL_INTERVAL);
 
-  const handleUpload = async (file) => {
-    if (!file) return;
-    setSuccess("");
-    setError("");
-    setLoading(true);
+      pollingRef.current[fileId] = intervalId;
+    },
+    [updateFile]
+  );
 
-    try {
-      const created = await onSubmit({ file });
-      setSuccess(`Document "${created.fileName}" déposé avec succès. Analyse en cours...`);
-      if (created.dagRunId) {
-        setPolling({ dagRunId: created.dagRunId, fileName: created.fileName });
-      }
-    } catch {
-      setError("Echec de l'envoi du document.");
+  // Queue processor: watches files state and uploads pending files when slots are free
+  useEffect(() => {
+    const activeCount = files.filter((f) => f.status === "uploading").length;
+    const pending = files.filter((f) => f.status === "pending");
+    const slotsAvailable = MAX_CONCURRENT - activeCount;
+
+    const toUpload = pending.slice(0, slotsAvailable);
+    if (toUpload.length === 0) return;
+
+    for (const entry of toUpload) {
+      // Mark as uploading
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === entry.id ? { ...f, status: "uploading" } : f
+        )
+      );
+
+      onSubmit({ file: entry.file })
+        .then((result) => {
+          if (result.dagRunId) {
+            updateFile(entry.id, {
+              status: "polling",
+              dagRunId: result.dagRunId,
+              fileName: result.fileName,
+            });
+            startPolling(entry.id, result.dagRunId);
+          } else {
+            // No dagRunId means demo/fallback mode
+            updateFile(entry.id, { status: "success" });
+          }
+        })
+        .catch(() => {
+          updateFile(entry.id, {
+            status: "failed",
+            error: "Échec de l'envoi.",
+          });
+        });
     }
+  }, [files, onSubmit, startPolling, updateFile]);
 
-    setLoading(false);
-  };
+  const addFiles = useCallback(
+    (newFiles) => {
+      setValidationError("");
+      const fileArray = Array.from(newFiles);
+
+      setFiles((prev) => {
+        if (prev.length + fileArray.length > MAX_FILES) {
+          setValidationError(`Maximum ${MAX_FILES} fichiers à la fois.`);
+          return prev;
+        }
+
+        const invalid = fileArray.filter(
+          (f) => !ACCEPTED_TYPES.includes(f.type)
+        );
+        if (invalid.length > 0) {
+          setValidationError(
+            `Type non accepté : ${invalid.map((f) => f.name).join(", ")}`
+          );
+          return prev;
+        }
+
+        const entries = fileArray.map((file) => ({
+          id: crypto.randomUUID(),
+          file,
+          fileName: file.name,
+          status: "pending",
+          dagRunId: null,
+          error: null,
+        }));
+
+        return [...prev, ...entries];
+      });
+    },
+    []
+  );
 
   const handleFileChange = (event) => {
-    const file = event.target.files && event.target.files[0];
-    handleUpload(file);
+    if (event.target.files && event.target.files.length > 0) {
+      addFiles(event.target.files);
+    }
     event.target.value = "";
   };
 
   const handleDrop = (event) => {
     event.preventDefault();
     setIsDragging(false);
-    const file = event.dataTransfer.files && event.dataTransfer.files[0];
-    handleUpload(file);
+    if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+      addFiles(event.dataTransfer.files);
+    }
   };
 
   const openFilePicker = () => {
@@ -74,17 +187,30 @@ function UploadPanel({ onSubmit }) {
     }
   };
 
+  const isUploading = files.some(
+    (f) => f.status === "uploading" || f.status === "pending"
+  );
+
+  const handleDismiss = () => {
+    setFiles((prev) =>
+      prev.filter(
+        (f) =>
+          f.status === "pending" ||
+          f.status === "uploading" ||
+          f.status === "polling"
+      )
+    );
+  };
+
   return (
     <section className="upload-panel">
       <div
         className={isDragging ? "drop-zone dragging" : "drop-zone"}
         onClick={() => {
-          if (!loading) {
-            openFilePicker();
-          }
+          if (!isUploading) openFilePicker();
         }}
         onDragOver={(event) => {
-          if (loading) return;
+          if (isUploading) return;
           event.preventDefault();
           setIsDragging(true);
         }}
@@ -93,10 +219,8 @@ function UploadPanel({ onSubmit }) {
         role="button"
         tabIndex={0}
         onKeyDown={(event) => {
-          if (loading) return;
-          if (["Enter", " "].includes(event.key)) {
-            openFilePicker();
-          }
+          if (isUploading) return;
+          if (["Enter", " "].includes(event.key)) openFilePicker();
         }}
       >
         <input
@@ -104,8 +228,9 @@ function UploadPanel({ onSubmit }) {
           type="file"
           className="visually-hidden"
           accept=".pdf,.png,.jpg,.jpeg,.webp"
+          multiple
           onChange={handleFileChange}
-          disabled={loading}
+          disabled={isUploading}
         />
         <div className="drop-zone-content">
           <div className="upload-icon" aria-hidden="true">
@@ -114,16 +239,26 @@ function UploadPanel({ onSubmit }) {
               <path d="M7 19a1 1 0 1 1 0-2h10a1 1 0 1 1 0 2H7Z" />
             </svg>
           </div>
-          <p>{loading ? "Envoi en cours..." : "Deposer un document"}</p>
-          <small>Glisser/deposer ou cliquer pour ouvrir l'explorateur.</small>
+          <p>{isUploading ? "Envoi en cours..." : "Deposer des documents"}</p>
+          <small>
+            Glisser/deposer ou cliquer pour ouvrir l'explorateur (max{" "}
+            {MAX_FILES} fichiers).
+          </small>
         </div>
       </div>
-      <UploadStatusBanner
-        polling={polling}
-        success={success}
-        error={error}
-        onDismiss={() => { setSuccess(""); setError(""); }}
-      />
+      {validationError && (
+        <div className="upload-status error">
+          <span className="upload-status-text">{validationError}</span>
+          <button
+            className="upload-status-dismiss"
+            onClick={() => setValidationError("")}
+            aria-label="Fermer"
+          >
+            ×
+          </button>
+        </div>
+      )}
+      <UploadStatusBanner files={files} onDismiss={handleDismiss} />
     </section>
   );
 }
