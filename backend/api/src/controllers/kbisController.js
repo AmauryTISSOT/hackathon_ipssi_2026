@@ -1,4 +1,5 @@
 import { KBIS } from '../models/KBIS.js';
+import { removeMinioFiles } from '../services/documentService.js';
 
 export const createKBIS = async (req, res) => {
   try {
@@ -90,6 +91,9 @@ export const deleteKBIS = async (req, res) => {
     if (!kbis) {
       res.status(404).json({ error: 'kbis not found' });
       return;
+    }
+    if (kbis.source_filename) {
+      await removeMinioFiles(kbis.source_filename);
     }
     res.json({ message: 'kbis deleted successfully' });
   } catch (error) {

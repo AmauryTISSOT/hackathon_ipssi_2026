@@ -136,6 +136,11 @@ async function request(path, { method = "GET", body, token, isFormData = false }
   return data;
 }
 
+export function getDocumentFileUrl(filename) {
+  const token = getAuthToken();
+  return `${API_URL}/api/documents/file/${encodeURIComponent(filename)}?token=${token}`;
+}
+
 export async function pollDocumentStatus(dagRunId) {
   const token = getAuthToken();
   return request(`/api/documents/status/${dagRunId}`, { token });
@@ -297,4 +302,9 @@ export async function deleteCertificate(id) {
 export async function deleteRib(id) {
   const token = getAuthToken();
   return request(`/api/ribs/${id}`, { method: "DELETE", token });
+}
+
+export async function deleteDocument(id) {
+  const token = getAuthToken();
+  return request(`/api/documents/${id}`, { method: "DELETE", token });
 }

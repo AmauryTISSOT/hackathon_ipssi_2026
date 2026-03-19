@@ -8,7 +8,8 @@ const CertificateEmergencyUrssafSchema = new Schema({
   security_code: { type: String },
   created_at: { type: Date },
   place_at: { type: String },
-  company_id: { type: Schema.Types.ObjectId, ref: 'Company' }
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
+  source_filename: { type: String }
 }, {
   timestamps: true
 });

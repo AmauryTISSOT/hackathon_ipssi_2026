@@ -34,6 +34,7 @@ const InvoiceSchema = new Schema({
   },
   invoice_lines: [InvoiceLineSchema],
   company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
+  source_filename: { type: String },
   issue_date: { type: Date },
   due_date: { type: Date },
   total_before_tax: { type: Number },

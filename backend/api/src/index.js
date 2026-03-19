@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import pinoHttp from 'pino-http';
+import logger from './config/logger.js';
 import { connectDatabase } from './config/database.js';
 import routes from './routes/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -12,6 +14,7 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   credentials: true,
 }));
+app.use(pinoHttp({ logger }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -28,10 +31,10 @@ const startServer = async () => {
     await connectDatabase();
 
     app.listen(PORT, () => {
-      console.log(`server running on port ${PORT}`);
+      logger.info(`server running on port ${PORT}`);
     });
   } catch (error) {
-    console.error('failed to start server:', error);
+    logger.error(error, 'failed to start server');
     process.exit(1);
   }
 };
