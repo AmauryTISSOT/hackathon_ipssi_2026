@@ -1,6 +1,6 @@
 import { getAuthToken, getCurrentUser } from "./authApi";
 
-const API_URL = import.meta.env.VITE_API_URL || "";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const DOCUMENTS_KEY = "demo_documents";
 
 const seedDocuments = [
@@ -162,7 +162,7 @@ export async function createDocument({ file }) {
     return {
       fileName: response.doc_name,
       dagRunId: response.dag_run_id,
-      status: "pending"
+      status: response.status || "pending",
     };
   } catch {
     const currentUser = getCurrentUser();

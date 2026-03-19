@@ -239,7 +239,7 @@ def save_to_mongodb(**context):
                 "document_id": doc_id,
                 "anomaly_type": alert.get("type"),
                 "control": alert.get("control"),
-                "status": "pending",
+                "status": doc_record["status"],
                 "createdAt": datetime.utcnow(),
                 "updatedAt": datetime.utcnow(),
             }

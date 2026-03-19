@@ -71,7 +71,7 @@ def get_company_by_siret(siret):
         client.close()
         return company
 
-def generate_inconsistent_rib_data(original_company, rib_data):
+def generate_inconsistent_rib(rib_data):
     modified = copy.deepcopy(rib_data)
     inconsistency_types = [
         'titulaire_mismatch',
@@ -102,84 +102,66 @@ def generate_inconsistent_rib_data(original_company, rib_data):
                 modified['banque'] = new_bank['name']
                 modified['code_banque'] = new_bank['code_banque']
                 modified['bic'] = new_bank['bic']
+                modified['iban'] = compute_iban(
+                    modified['code_banque'],
+                    modified['code_guichet'],
+                    modified['numero_compte'],
+                    modified['cle_rib']
+                )
 
         elif inconsistency == 'account_number_invalid':
             modified['numero_compte'] = fake.numerify('####')
         elif inconsistency == 'rib_key_invalid':
             modified['cle_rib'] = f"{random.randint(0, 99):02d}"
+            modified['iban'] = compute_iban(
+                modified['code_banque'],
+                modified['code_guichet'],
+                modified['numero_compte'],
+                modified['cle_rib']
+            )
     return modified
 
 
-def compute_rib_key(bank, branch, account):
-    account_num = "".join(convert(c) for c in account)
-    rib_number = f"{bank}{branch}{account_num}"
-    key = 97 - (int(rib_number) % 97)
+def compute_rib_key(bank_code, branch_code, account_number):
+    rib_without_key = f"{bank_code}{branch_code}{account_number}"
+    key = 97 - (int(rib_without_key) % 97)
     return f"{key:02d}"
 
 
-def compute_iban(bank, branch, account, rib_key):
-    account_num = "".join(convert(c) for c in account)
-    rib = f"{bank}{branch}{account_num}{rib_key}"
+def compute_iban(bank_code, branch_code, account_number, rib_key):
+    rib = f"{bank_code}{branch_code}{account_number}{rib_key}"
     temp = rib + "1527"
     iban_key = 98 - (int(temp) % 97)
     return f"FR{iban_key:02d}{rib}"
 
-
-def get_rib_holder(company):
-    denom = company.get("denomination_unite_legale")
-    if denom and denom.strip():
-        return denom.strip(), "entreprise"
-    nom = company.get("nom_unite_legale")
-    prenom = company.get("prenom_1_unite_legale") or company.get("prenom_usuel_unite_legale")
-    if nom and prenom:
-        return f"{prenom.strip()} {nom.strip()}", "personne"
-    if nom:
-        return nom.strip(), "personne"
-    return fake.name().upper(), "inconnu"
-
-def get_address(company):
-    adresse_parts = []
-    if company.get('numero_voie_etablissement'):
-        adresse_parts.append(str(company.get('numero_voie_etablissement')))
-    if company.get('type_voie_etablissement'):
-        adresse_parts.append(company.get('type_voie_etablissement'))
-    if company.get('libelle_voie_etablissement'):
-        adresse_parts.append(company.get('libelle_voie_etablissement'))
-    adresse = ' '.join(adresse_parts)
-    if company.get('code_postal_etablissement') or company.get('libelle_commune_etablissement'):
-        ville_parts = []
-        if company.get('code_postal_etablissement'):
-            ville_parts.append(str(company.get('code_postal_etablissement')))
-        if company.get('libelle_commune_etablissement'):
-            ville_parts.append(company.get('libelle_commune_etablissement'))
-        if ville_parts:
-            if adresse:
-                adresse += ', ' + ' '.join(ville_parts)
-            else:
-                adresse = ' '.join(ville_parts)
-    if not adresse:
-        adresse = company.get('adresse_etablissement', fake.address().replace('\n', ', '))
-    return adresse
-
-
 def generate_rib(company):
     bank = random.choice(BANKS)
-    code_banque = bank["code_banque"]
-    code_guichet = str(random.randint(10000, 99999))
-    account = "".join(random.choices("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=11))
-    rib_key = compute_rib_key(code_banque, code_guichet, account)
-    iban = compute_iban(code_banque, code_guichet, account, rib_key)
-    holder, type_holder = get_rib_holder(company)
+
+    bank_code = bank["code_banque"]
+    branch_code = f"{random.randint(10000, 99999)}"
+    account_number = "".join(random.choices("0123456789", k=11))
+    rib_key = compute_rib_key(bank_code, branch_code, account_number)
+    iban = compute_iban(bank_code, branch_code, account_number, rib_key)
+    titulaire = (company.get("denomination_unite_legale") or
+                 company.get("nom_unite_legale", "") + " " +
+                 company.get("prenom_1_unite_legale", "")).strip()
+    if not titulaire:
+        titulaire = fake.name().upper()
+    adresse = f"{company.get('numero_voie_etablissement', '')} {company.get('type_voie_etablissement', '')} {company.get('libelle_voie_etablissement', '')}".strip()
+    if company.get('code_postal_etablissement') or company.get('libelle_commune_etablissement'):
+        ville = f"{company.get('code_postal_etablissement', '')} {company.get('libelle_commune_etablissement', '')}".strip()
+        adresse = f"{adresse}, {ville}" if adresse else ville
+    if not adresse:
+        adresse = fake.address().replace('\n', ', ')
     return {
-        "titulaire": holder,
-        "type": type_holder,
-        "adresse": get_address(company),
+        "titulaire": titulaire,
+        "adresse": adresse,
         "banque": bank["name"],
         "logo_banque": bank["logo"],
         "bic": bank["bic"],
-        "code_banque": code_banque,
-        "code_guichet": code_guichet,
-        "numero_compte": account,
+        "code_banque": bank_code,
+        "code_guichet": branch_code,
+        "numero_compte": account_number,
         "cle_rib": rib_key,
         "iban": iban,
         "agence": fake.city(),
@@ -216,6 +198,8 @@ def rib_to_pdf(rib, filename):
 
 def main():
     """Fonction principale avec interface en ligne de commande"""
+
+    global OUTPUT_DIR
     parser = argparse.ArgumentParser(description='Génération de RIB depuis MongoDB')
 
     group = parser.add_mutually_exclusive_group()
@@ -228,15 +212,13 @@ def main():
                         help='Filtre MongoDB au format JSON (ex: \'{"categorie_entreprise":"PME"}\')')
     parser.add_argument('--random', action='store_true', help='Sélection aléatoire')
     parser.add_argument('--inconsistent', action='store_true', help='Générer des RIB incohérents')
-    parser.add_argument('--output-dir', type=str, help='Répertoire de sortie personnalisé')
+    parser.add_argument('--output-dir', type=str, default=OUTPUT_DIR, help='Répertoire de sortie personnalisé')
 
     args = parser.parse_args()
 
-    global OUTPUT_DIR
     if args.output_dir:
         OUTPUT_DIR = args.output_dir
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-
     if args.siret:
         company = get_company_by_siret(args.siret)
         if company:
@@ -279,16 +261,16 @@ def main():
 
         rib_data = generate_rib(company)
         if args.inconsistent:
-            rib_data = generate_inconsistent_rib_data(company, rib_data)
+            rib_data = generate_inconsistent_rib(rib_data)
         inconsistent_tag = "_inconsistent" if args.inconsistent else ""
         filename = f"rib_{siret}{inconsistent_tag}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{i}.pdf"
         pdf_path = Path(OUTPUT_DIR) / filename
         print(f"→ {pdf_path}")
         rib_to_pdf(rib_data, str(pdf_path))
-    print(f"\n✅ Génération terminée!")
-    print(f"📁 {len(companies)} RIB générés dans : {OUTPUT_DIR}")
+    print(f"\nGénération terminée!")
+    print(f"{len(companies)} RIB générés dans : {OUTPUT_DIR}")
     if args.inconsistent:
-        print("⚠️ Des données incohérentes ont été utilisées")
+        print("Des données incohérentes ont été utilisées")
 
 if __name__ == "__main__":
     main()
