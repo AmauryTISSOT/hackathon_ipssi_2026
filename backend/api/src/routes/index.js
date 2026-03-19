@@ -7,6 +7,7 @@ import ribRoutes from './ribRoutes.js';
 import kbisRoutes from './kbisRoutes.js';
 import certificateEmergencyUrssafRoutes from './certificateEmergencyUrssafRoutes.js';
 import documentRoutes from './documentRoutes.js';
+import anomalyRoutes from './anomalyRoutes.js';
 import { protect, checkRole } from '../middleware/authMiddleware.js';
 
 const router = Router();
@@ -21,5 +22,6 @@ router.use('/ribs', comptable, ribRoutes);
 router.use('/kbis', comptable, kbisRoutes);
 router.use('/certificates-urssaf', comptable, certificateEmergencyUrssafRoutes);
 router.use('/documents', documentRoutes);
+router.use('/anomalies', comptable, anomalyRoutes);
 
 export default router;
