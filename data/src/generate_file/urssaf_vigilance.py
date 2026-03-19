@@ -277,6 +277,7 @@ def urssaf_to_pdf_reportlab(att, filename):
 
 def main():
     """Fonction principale avec interface en ligne de commande"""
+    global OUTPUT_DIR
     parser = argparse.ArgumentParser(description='Génération d\'attestations URSSAF depuis MongoDB')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--siret', type=str, help='Générer pour un SIRET spécifique')
@@ -286,9 +287,8 @@ def main():
     parser.add_argument('--filter', type=str,help='Filtre MongoDB au format JSON (ex: \'{"categorie_entreprise":"PME"}\')')
     parser.add_argument('--random', action='store_true', help='Sélection aléatoire')
     parser.add_argument('--inconsistent', action='store_true', help='Générer des attestations incohérentes')
-    parser.add_argument('--output-dir', type=str, help='Répertoire de sortie personnalisé')
+    parser.add_argument('--output-dir', type=str, default=OUTPUT_DIR, help='Répertoire de sortie personnalisé')
     args = parser.parse_args()
-    global OUTPUT_DIR
     if args.output_dir:
         OUTPUT_DIR = args.output_dir
     os.makedirs(OUTPUT_DIR, exist_ok=True)

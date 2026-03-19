@@ -6,12 +6,11 @@ from reportlab.lib.units import mm
 from reportlab.lib.utils import simpleSplit
 from datetime import datetime
 from dotenv import load_dotenv
-from pymongo import MongoClient
 import random
 import argparse
 import copy
 
-from utils import get_project_root, safe, get_mongodb_connection
+from utils import get_project_root, get_mongodb_connection, safe
 
 fake = Faker('fr_FR')
 ROOT_DIR = get_project_root()
@@ -25,7 +24,7 @@ DB_NAME = os.getenv("DB_NAME", "Hackathon")
 COLLECTION_NAME = "companies"
 BASE_PATH = os.path.join(ROOT_DIR, "data", "data_sirene")
 execution_date = datetime.now().strftime("%Y%m%d_%H%M%S")
-OUTPUT_DIR = os.path.join(ROOT_DIR, "data", "fake_data", "kbis_test", execution_date)
+OUTPUT_DIR = os.path.join(ROOT_DIR, "data", "fake_data", "kbis", execution_date)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
@@ -401,6 +400,8 @@ def generate_kbis_pdf_from_company(company_data, output_path, use_inconsistent=F
     print(f"Kbis généré pour {denomination} (SIREN: {safe(etab_data.get('siren', 'N/A'))})")
 
 def main():
+
+    global OUTPUT_DIR
     parser = argparse.ArgumentParser(description='Génération de KBIS depuis MongoDB')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--siret', type=str, help='Générer pour un SIRET spécifique')
@@ -411,9 +412,8 @@ def main():
                         help='Filtre MongoDB au format JSON (ex: \'{"categorie_entreprise":"PME"}\')')
     parser.add_argument('--random', action='store_true', help='Sélection aléatoire')
     parser.add_argument('--inconsistent', action='store_true', help='Générer des KBIS incohérents')
-    parser.add_argument('--output-dir', type=str, help='Répertoire de sortie personnalisé')
+    parser.add_argument('--output-dir', type=str, default=OUTPUT_DIR, help='Répertoire de sortie personnalisé')
     args = parser.parse_args()
-    global OUTPUT_DIR
     if args.output_dir:
         OUTPUT_DIR = args.output_dir
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -448,7 +448,7 @@ def main():
         )
     else:
         print("Aucune option spécifiée, génération de 10 entreprises aléatoires")
-        companies = get_companies_from_mongodb(limit=10, random_selection=True)
+        companies = get_companies_from_mongodb(limit=100, random_selection=True)
     if not companies:
         print("Aucune entreprise trouvée")
         return
