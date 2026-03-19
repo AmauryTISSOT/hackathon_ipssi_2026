@@ -4,6 +4,7 @@ import { protect } from "../middleware/authMiddleware.js";
 import {
     uploadDocument,
     getDocumentStatus,
+    getDocumentFile,
     getHistory,
 } from "../controllers/documentController.js";
 
@@ -32,5 +33,12 @@ router.get("/status/:dagRunId", protect, getDocumentStatus);
  * Authentification requise (JWT Bearer token).
  */
 router.get("/history", protect, getHistory);
+
+/**
+ * GET /api/documents/file/:filename
+ * Streame un fichier depuis le bucket bronze de MinIO.
+ * Supporte le token JWT via query param (?token=xxx) pour window.open().
+ */
+router.get("/file/:filename", protect, getDocumentFile);
 
 export default router;

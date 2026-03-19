@@ -15,6 +15,7 @@ import {
   deleteKbis,
   deleteCertificate,
   deleteRib,
+  getDocumentFileUrl,
 } from "../services/documentApi";
 
 const comptableLinks = [
@@ -42,6 +43,7 @@ function normalizeInvoice(doc) {
     amount: doc.total_before_tax != null ? `${doc.total_before_tax}€ / ${doc.total}€` : "-",
     date: doc.issue_date ? doc.issue_date.slice(0, 10) : "-",
     ownerName: company?.denomination_unite_legale ?? "-",
+    sourceFilename: doc.source_filename,
   };
 }
 
@@ -55,6 +57,7 @@ function normalizeQuotation(doc) {
     amount: doc.total_before_tax != null ? `${doc.total_before_tax}€ / ${doc.total}€` : "-",
     date: doc.issue_date ? doc.issue_date.slice(0, 10) : "-",
     ownerName: doc.issuer?.name ?? "-",
+    sourceFilename: doc.source_filename,
   };
 }
 
@@ -66,6 +69,7 @@ function normalizeKbis(doc) {
     trading_name: activity.trading_name ?? "-",
     establishment_address: activity.establishment_address ?? "-",
     legal_form: legal.legal_form ?? "-",
+    sourceFilename: doc.source_filename,
   };
 }
 
@@ -78,6 +82,7 @@ function normalizeCertificate(doc) {
     place_at: doc.place_at ? String(doc.place_at).slice(0, 10) : "-",
     siren: doc.siren ?? "-",
     social_security: doc.social_security ?? "-",
+    sourceFilename: doc.source_filename,
   };
 }
 
@@ -94,6 +99,7 @@ function normalizeRib(doc) {
     registered_address: doc.registered_address ?? "-",
     siret: company?.siret ?? "-",
     date: doc.createdAt ? doc.createdAt.slice(0, 10) : "-",
+    sourceFilename: doc.source_filename,
   };
 }
 
@@ -287,11 +293,12 @@ function ComptableRecapPage() {
   };
 
   const handleViewDocument = (document) => {
-    if (document.fileUrl) {
-      window.open(document.fileUrl, "_blank", "noopener,noreferrer");
+    if (document.sourceFilename) {
+      const url = getDocumentFileUrl(document.sourceFilename);
+      window.open(url, "_blank", "noopener,noreferrer");
       return;
     }
-    window.alert(`Apercu indisponible pour "${document.fileName}".`);
+    window.alert(`Apercu indisponible pour "${document.fileName || document.id}".`);
   };
 
   const handleDeleteDocument = async (documentId) => {

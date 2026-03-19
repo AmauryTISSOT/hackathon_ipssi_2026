@@ -1,6 +1,8 @@
+import path from "path";
 import {
     uploadAndTrigger,
     getDagRunStatus,
+    getFileFromBronze,
 } from "../services/documentService.js";
 import Document from "../models/Document.js";
 
@@ -32,6 +34,40 @@ export const getDocumentStatus = async (req, res) => {
 
         res.status(200).json(status);
     } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const MIME_TYPES = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".tiff": "image/tiff",
+    ".tif": "image/tiff",
+    ".bmp": "image/bmp",
+};
+
+export const getDocumentFile = async (req, res) => {
+    try {
+        const filename = req.params.filename;
+        if (!filename) {
+            return res.status(400).json({ message: "Nom de fichier manquant" });
+        }
+
+        const ext = path.extname(filename).toLowerCase();
+        const contentType = MIME_TYPES[ext] || "application/octet-stream";
+
+        const stream = await getFileFromBronze(filename);
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+        stream.pipe(res);
+    } catch (error) {
+        if (error.code === "NoSuchKey" || error.message?.includes("Not Found")) {
+            return res.status(404).json({ message: "Fichier introuvable dans MinIO" });
+        }
         res.status(500).json({ message: error.message });
     }
 };

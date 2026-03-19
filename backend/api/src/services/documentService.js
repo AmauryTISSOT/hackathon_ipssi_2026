@@ -92,6 +92,15 @@ export const uploadAndTrigger = async (file, userId) => {
  * @returns {Promise<object>} Statut complet du DAG run (state, start_date, end_date, etc.)
  */
 
+/**
+ * Récupère un fichier depuis le bucket bronze de MinIO sous forme de stream.
+ * @param {string} filename - Nom du fichier dans le bucket bronze
+ * @returns {Promise<import('stream').Readable>} Stream du fichier
+ */
+export const getFileFromBronze = async (filename) => {
+    return minioClient.getObject("bronze", filename);
+};
+
 export const getDagRunStatus = async (dagRunId) => {
     const response = await airflowRequest(
         "get",

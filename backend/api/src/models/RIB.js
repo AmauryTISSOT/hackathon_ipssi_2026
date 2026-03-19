@@ -8,7 +8,8 @@ const RIBSchema = new Schema({
   account_number: { type: String },
   key: { type: Number },
   registered_address: { type: String },
-  company_id: { type: Schema.Types.ObjectId, ref: 'Company' }
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
+  source_filename: { type: String }
 }, {
   timestamps: true
 });

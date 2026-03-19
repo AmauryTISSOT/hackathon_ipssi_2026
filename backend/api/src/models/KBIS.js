@@ -54,7 +54,8 @@ const KBISSchema = new Schema({
     type: InformationRelatingAnotherEstablishmentJurisdictionSchema, 
     required: true 
   },
-  company_id: { type: Schema.Types.ObjectId, ref: 'Company', required: true }
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+  source_filename: { type: String }
 }, {
   timestamps: true
 });

@@ -29,7 +29,8 @@ const QuotationSchema = new Schema({
   made_at: { type: String },
   issue_date: { type: Date },
   due_date: { type: Date },
-  company_id: { type: Schema.Types.ObjectId, ref: 'Company' }
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
+  source_filename: { type: String }
 }, {
   timestamps: true
 });
