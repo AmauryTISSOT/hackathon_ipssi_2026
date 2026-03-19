@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { pollDocumentStatus } from "../services/documentApi";
+import UploadStatusBanner from "./UploadStatusBanner";
 
 function UploadPanel({ onSubmit }) {
   const fileInputRef = useRef(null);
@@ -117,8 +118,12 @@ function UploadPanel({ onSubmit }) {
           <small>Glisser/deposer ou cliquer pour ouvrir l'explorateur.</small>
         </div>
       </div>
-      {error ? <p className="message error">{error}</p> : null}
-      {success ? <p className="message success">{success}</p> : null}
+      <UploadStatusBanner
+        polling={polling}
+        success={success}
+        error={error}
+        onDismiss={() => { setSuccess(""); setError(""); }}
+      />
     </section>
   );
 }
