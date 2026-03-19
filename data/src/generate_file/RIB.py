@@ -10,7 +10,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from dotenv import load_dotenv
 
-from data.utils import get_project_root, safe, convert, get_mongodb_connection
+from utils import get_project_root, safe, convert, get_mongodb_connection
 
 ROOT_DIR = get_project_root()
 load_dotenv(os.path.join(ROOT_DIR, ".env"))

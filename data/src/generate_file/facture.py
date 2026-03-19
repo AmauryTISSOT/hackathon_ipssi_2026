@@ -1,3 +1,4 @@
+import argparse
 import os
 import random
 from datetime import date, timedelta
@@ -249,13 +250,18 @@ def build_pdf(data: dict, filepath: str) -> None:
 
 
 def main() -> None:
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    for i in range(1, NUM_FACTURES + 1):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--count", type=int, default=NUM_FACTURES)
+    parser.add_argument("--output-dir", type=str, default=OUTPUT_DIR)
+    args = parser.parse_args()
+    out = args.output_dir
+    os.makedirs(out, exist_ok=True)
+    for i in range(1, args.count + 1):
         data = generate_facture_data(i)
-        filepath = os.path.join(OUTPUT_DIR, f"{data['number']}.pdf")
+        filepath = os.path.join(out, f"{data['number']}.pdf")
         build_pdf(data, filepath)
-        print(f"[{i:02d}/{NUM_FACTURES}] Générée : {filepath}")
-    print(f"\n✓ {NUM_FACTURES} factures créées dans le dossier « {OUTPUT_DIR}/»")
+        print(f"[{i:02d}/{args.count}] Générée : {filepath}")
+    print(f"\n✓ {args.count} factures créées dans le dossier « {out}/»")
 
 
 if __name__ == "__main__":

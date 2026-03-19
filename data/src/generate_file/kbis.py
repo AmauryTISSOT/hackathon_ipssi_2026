@@ -11,7 +11,7 @@ import random
 import argparse
 import copy
 
-from data.utils import get_project_root, safe, get_mongodb_connection
+from utils import get_project_root, safe, get_mongodb_connection
 
 fake = Faker('fr_FR')
 ROOT_DIR = get_project_root()
