@@ -7,14 +7,6 @@ const STATUS_LABELS = {
   timeout: "Délai dépassé",
 };
 
-const STATUS_ICONS = {
-  pending: "⏳",
-  uploading: "⬆️",
-  polling: "🔄",
-  success: "✅",
-  failed: "❌",
-  timeout: "⏱️",
-};
 
 function UploadStatusBanner({ files, onDismiss }) {
   if (!files || files.length === 0) return null;
@@ -43,7 +35,6 @@ function UploadStatusBanner({ files, onDismiss }) {
       <ul className="upload-status-list">
         {files.map((f) => (
           <li key={f.id} className={`upload-status-item ${f.status}`}>
-            <span className="upload-status-icon">{STATUS_ICONS[f.status]}</span>
             <span className="upload-status-name">{f.fileName}</span>
             <span className="upload-status-label">
               {f.error || STATUS_LABELS[f.status]}
