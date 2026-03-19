@@ -207,7 +207,8 @@ def save_to_mongodb(**context):
         "gold_path": f"gold/gold_{doc_name.rsplit('.', 1)[0]}.json",
         "processed_at": gold_data["processed_at"],
     }
-    doc_id = _upsert_and_get_id(db.documents, {"filename": doc_name}, doc_record)
+    dag_run_id = context["dag_run"].run_id
+    doc_id = _upsert_and_get_id(db.documents, {"dag_run_id": dag_run_id}, doc_record)
 
     # 2. Alerts
     if alerts:

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+from pymongo import MongoClient
 
 
 def get_project_root():
@@ -33,3 +34,12 @@ def get_latest_parquet(data_dir):
 
 def build_metadata(row):
     return row["metadata"]
+
+
+def get_mongodb_connection(mongodb_uri, db_name, collection_name):
+    client = MongoClient(mongodb_uri)
+    db = client[db_name]
+    collection = db[collection_name]
+    return client, collection
+def convert(c):
+    return c if c.isdigit() else str(ord(c.upper()) - 55)

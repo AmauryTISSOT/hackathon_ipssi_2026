@@ -7,16 +7,19 @@ import ribRoutes from './ribRoutes.js';
 import kbisRoutes from './kbisRoutes.js';
 import certificateEmergencyUrssafRoutes from './certificateEmergencyUrssafRoutes.js';
 import documentRoutes from './documentRoutes.js';
+import { protect, checkRole } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
+const comptable = [protect, checkRole('comptable')];
+
 router.use('/auth', authRoutes);
-router.use('/quotations', quotationRoutes);
-router.use('/invoices', invoiceRoutes);
-router.use('/companies', companyRoutes);
-router.use('/ribs', ribRoutes);
-router.use('/kbis', kbisRoutes);
-router.use('/certificates-urssaf', certificateEmergencyUrssafRoutes);
+router.use('/quotations', comptable, quotationRoutes);
+router.use('/invoices', comptable, invoiceRoutes);
+router.use('/companies', comptable, companyRoutes);
+router.use('/ribs', comptable, ribRoutes);
+router.use('/kbis', comptable, kbisRoutes);
+router.use('/certificates-urssaf', comptable, certificateEmergencyUrssafRoutes);
 router.use('/documents', documentRoutes);
 
 export default router;
